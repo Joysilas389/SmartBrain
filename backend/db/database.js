@@ -1,165 +1,130 @@
-const Database = require('better-sqlite3');
-const path = require('path');
-const fs = require('fs');
+const low    = require('lowdb');
+const FileSync = require('lowdb/adapters/FileSync');
+const path   = require('path');
+const fs     = require('fs');
+const { v4: uuidv4 } = require('uuid');
 
-const DB_DIR = path.join(__dirname, '..', 'data');
-const DB_PATH = path.join(DB_DIR, 'smartmedicine.db');
+const DATA_DIR = path.join(__dirname, '..', 'data');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
+const adapter = new FileSync(path.join(DATA_DIR, 'db.json'));
+const db = low(adapter);
 
-const db = new Database(DB_PATH);
+// Default schema
+db.defaults({
+  topics:     [],
+  messages:   [],
+  flashcards: [],
+  concepts:   []
+}).write();
 
-// Enable WAL mode for performance
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+// ── helpers ──────────────────────────────────────────
+function now() { return new Date().toISOString(); }
+function genId() { return uuidv4(); }
 
-// ── Schema ──────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS topics (
-    id          TEXT PRIMARY KEY,
-    title       TEXT NOT NULL,
-    specialty   TEXT NOT NULL DEFAULT 'General',
-    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS messages (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    topic_id    TEXT NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
-    role        TEXT NOT NULL CHECK(role IN ('user','assistant')),
-    content     TEXT NOT NULL DEFAULT '',
-    created_at  TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS flashcards (
-    id          TEXT PRIMARY KEY,
-    topic_id    TEXT NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
-    specialty   TEXT NOT NULL DEFAULT 'General',
-    front       TEXT NOT NULL,
-    back        TEXT NOT NULL,
-    source      TEXT NOT NULL DEFAULT 'ai',
-    created_at  TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS concepts (
-    id          TEXT PRIMARY KEY,
-    topic_id    TEXT REFERENCES topics(id) ON DELETE SET NULL,
-    specialty   TEXT NOT NULL DEFAULT 'General',
-    content     TEXT NOT NULL,
-    type        TEXT NOT NULL DEFAULT 'highlight',
-    created_at  TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_messages_topic   ON messages(topic_id);
-  CREATE INDEX IF NOT EXISTS idx_flashcards_topic ON flashcards(topic_id);
-  CREATE INDEX IF NOT EXISTS idx_flashcards_spec  ON flashcards(specialty);
-  CREATE INDEX IF NOT EXISTS idx_concepts_topic   ON concepts(topic_id);
-  CREATE INDEX IF NOT EXISTS idx_concepts_spec    ON concepts(specialty);
-`);
-
-// ── Topic operations ─────────────────────────────────
+// ── TOPICS ────────────────────────────────────────────
 const topicOps = {
-  getAll: db.prepare(`
-    SELECT t.*,
-      COUNT(DISTINCT m.id) as message_count,
-      COUNT(DISTINCT f.id) as flashcard_count
-    FROM topics t
-    LEFT JOIN messages m ON m.topic_id = t.id
-    LEFT JOIN flashcards f ON f.topic_id = t.id
-    GROUP BY t.id
-    ORDER BY t.updated_at DESC
-  `),
-
-  getById: db.prepare(`SELECT * FROM topics WHERE id = ?`),
-
-  create: db.prepare(`
-    INSERT INTO topics(id, title, specialty, created_at, updated_at)
-    VALUES(@id, @title, @specialty, datetime('now'), datetime('now'))
-  `),
-
-  update: db.prepare(`
-    UPDATE topics SET title=@title, specialty=@specialty, updated_at=datetime('now')
-    WHERE id=@id
-  `),
-
-  touch: db.prepare(`UPDATE topics SET updated_at=datetime('now') WHERE id=?`),
-
-  delete: db.prepare(`DELETE FROM topics WHERE id=?`),
-
-  rename: db.prepare(`UPDATE topics SET title=@title, updated_at=datetime('now') WHERE id=@id`),
-
-  setSpecialty: db.prepare(`UPDATE topics SET specialty=@specialty, updated_at=datetime('now') WHERE id=@id`),
+  getAll() {
+    const topics = db.get('topics').orderBy(['updated_at'], ['desc']).value();
+    return topics.map(t => ({
+      ...t,
+      message_count:   db.get('messages').filter({topic_id: t.id}).size().value(),
+      flashcard_count: db.get('flashcards').filter({topic_id: t.id}).size().value()
+    }));
+  },
+  getById(id) {
+    return db.get('topics').find({ id }).value() || null;
+  },
+  create({ title, specialty }) {
+    const topic = { id: genId(), title, specialty: specialty || 'General', created_at: now(), updated_at: now() };
+    db.get('topics').push(topic).write();
+    return topic;
+  },
+  update(id, fields) {
+    db.get('topics').find({ id }).assign({ ...fields, updated_at: now() }).write();
+    return this.getById(id);
+  },
+  touch(id) {
+    db.get('topics').find({ id }).assign({ updated_at: now() }).write();
+  },
+  delete(id) {
+    db.get('topics').remove({ id }).write();
+    db.get('messages').remove({ topic_id: id }).write();
+    db.get('flashcards').remove({ topic_id: id }).write();
+    db.get('concepts').remove({ topic_id: id }).write();
+  }
 };
 
-// ── Message operations ────────────────────────────────
+// ── MESSAGES ──────────────────────────────────────────
 const msgOps = {
-  getByTopic: db.prepare(`SELECT * FROM messages WHERE topic_id=? ORDER BY id ASC`),
-
-  insert: db.prepare(`
-    INSERT INTO messages(topic_id, role, content, created_at)
-    VALUES(@topic_id, @role, @content, datetime('now'))
-    RETURNING id
-  `),
-
-  updateContent: db.prepare(`UPDATE messages SET content=? WHERE id=?`),
-
-  getLastAssistant: db.prepare(`
-    SELECT * FROM messages WHERE topic_id=? AND role='assistant' ORDER BY id DESC LIMIT 1
-  `),
+  getByTopic(topic_id) {
+    return db.get('messages').filter({ topic_id }).sortBy('created_at').value();
+  },
+  insert({ topic_id, role, content }) {
+    const msg = { id: genId(), topic_id, role, content: content || '', created_at: now() };
+    db.get('messages').push(msg).write();
+    return msg;
+  },
+  updateContent(id, content) {
+    db.get('messages').find({ id }).assign({ content }).write();
+  }
 };
 
-// ── Flashcard operations ──────────────────────────────
+// ── FLASHCARDS ────────────────────────────────────────
 const fcOps = {
-  getAll: db.prepare(`SELECT * FROM flashcards ORDER BY created_at DESC`),
-
-  getByTopic: db.prepare(`SELECT * FROM flashcards WHERE topic_id=? ORDER BY created_at DESC`),
-
-  getBySpecialty: db.prepare(`SELECT * FROM flashcards WHERE specialty=? ORDER BY created_at DESC`),
-
-  insert: db.prepare(`
-    INSERT INTO flashcards(id, topic_id, specialty, front, back, source, created_at)
-    VALUES(@id, @topic_id, @specialty, @front, @back, @source, datetime('now'))
-  `),
-
-  delete: db.prepare(`DELETE FROM flashcards WHERE id=?`),
-
-  getStats: db.prepare(`
-    SELECT specialty, COUNT(*) as count FROM flashcards GROUP BY specialty ORDER BY count DESC
-  `),
+  getAll() {
+    return db.get('flashcards').orderBy(['created_at'], ['desc']).value();
+  },
+  getByTopic(topic_id) {
+    return db.get('flashcards').filter({ topic_id }).orderBy(['created_at'], ['desc']).value();
+  },
+  getBySpecialty(specialty) {
+    return db.get('flashcards').filter({ specialty }).orderBy(['created_at'], ['desc']).value();
+  },
+  insert({ topic_id, specialty, front, back, source }) {
+    const fc = { id: genId(), topic_id, specialty: specialty || 'General', front, back, source: source || 'ai', created_at: now() };
+    db.get('flashcards').push(fc).write();
+    return fc;
+  },
+  delete(id) {
+    db.get('flashcards').remove({ id }).write();
+  },
+  getStats() {
+    const fcs = db.get('flashcards').value();
+    const counts = {};
+    fcs.forEach(f => { counts[f.specialty] = (counts[f.specialty] || 0) + 1; });
+    return Object.entries(counts).map(([specialty, count]) => ({ specialty, count })).sort((a,b) => b.count - a.count);
+  }
 };
 
-// ── Concept/Highlight operations ──────────────────────
+// ── CONCEPTS ──────────────────────────────────────────
 const conceptOps = {
-  getByTopic: db.prepare(`SELECT * FROM concepts WHERE topic_id=? ORDER BY created_at DESC`),
-
-  getBySpecialty: db.prepare(`SELECT * FROM concepts WHERE specialty=? ORDER BY created_at DESC`),
-
-  insert: db.prepare(`
-    INSERT INTO concepts(id, topic_id, specialty, content, type, created_at)
-    VALUES(@id, @topic_id, @specialty, @content, @type, datetime('now'))
-  `),
-
-  delete: db.prepare(`DELETE FROM concepts WHERE id=?`),
+  getByTopic(topic_id) {
+    return db.get('concepts').filter({ topic_id }).orderBy(['created_at'], ['desc']).value();
+  },
+  getBySpecialty(specialty) {
+    return db.get('concepts').filter({ specialty }).orderBy(['created_at'], ['desc']).value();
+  },
+  insert({ topic_id, specialty, content, type }) {
+    const c = { id: genId(), topic_id, specialty: specialty || 'General', content, type: type || 'highlight', created_at: now() };
+    db.get('concepts').push(c).write();
+    return c;
+  },
+  delete(id) {
+    db.get('concepts').remove({ id }).write();
+  }
 };
 
-// ── Stats ─────────────────────────────────────────────
+// ── STATS ──────────────────────────────────────────────
 const statsOps = {
-  overview: db.prepare(`
-    SELECT
-      (SELECT COUNT(*) FROM topics)    as total_topics,
-      (SELECT COUNT(*) FROM messages)  as total_messages,
-      (SELECT COUNT(*) FROM flashcards) as total_flashcards,
-      (SELECT COUNT(*) FROM concepts)  as total_concepts
-  `),
-  bySpecialty: db.prepare(`
-    SELECT specialty,
-      COUNT(DISTINCT t.id) as topics,
-      COUNT(DISTINCT f.id) as flashcards
-    FROM topics t
-    LEFT JOIN flashcards f ON f.specialty = t.specialty
-    GROUP BY t.specialty
-    ORDER BY topics DESC
-  `),
+  overview() {
+    return {
+      total_topics:     db.get('topics').size().value(),
+      total_messages:   db.get('messages').size().value(),
+      total_flashcards: db.get('flashcards').size().value(),
+      total_concepts:   db.get('concepts').size().value()
+    };
+  }
 };
 
-module.exports = { db, topicOps, msgOps, fcOps, conceptOps, statsOps };
+module.exports = { db, topicOps, msgOps, fcOps, conceptOps, statsOps, genId };
