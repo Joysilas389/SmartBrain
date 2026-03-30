@@ -1,0 +1,26 @@
+name: Deploy SmartMedicine
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy-backend:
+    name: Trigger Render Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Deploy Hook
+        if: env.RENDER_DEPLOY_HOOK != ''
+        run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+
+  deploy-frontend:
+    name: Trigger Netlify Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Netlify Build Hook
+        if: env.NETLIFY_BUILD_HOOK != ''
+        run: curl -X POST -d '{}' "${{ secrets.NETLIFY_BUILD_HOOK }}"
+        env:
+          NETLIFY_BUILD_HOOK: ${{ secrets.NETLIFY_BUILD_HOOK }}

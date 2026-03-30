@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>SmartMedicine — Dr. Agbesi</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚕</text></svg>"/>
+
+<!-- Bootstrap 5.3 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<!-- Bootstrap Icons - integrity verified CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<!-- Mermaid, Marked, Highlight.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark-dimmed.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<style>
+/* ═══════════════════════════════════════════════════════
+   GLOBAL RESET & TOKENS
+═══════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sm-bg:       #060e1c;
+  --sm-surface:  #0b1830;
+  --sm-panel:    #0f2040;
+  --sm-raise:    #132850;
+  --sm-border:   rgba(20,184,166,0.14);
+  --sm-teal:     #14b8a6;
+  --sm-amber:    #f59e0b;
+  --sm-danger:   #f43f5e;
+  --sm-text1:    #dce9ff;
+  --sm-text2:    #7a9dc0;
+  --sm-text3:    #3d5a7a;
+  --sm-serif:    'Playfair Display', Georgia, serif;
+  --sm-sans:     'Nunito', system-ui, sans-serif;
+  --sm-mono:     'JetBrains Mono', monospace;
+  /* Bootstrap dark overrides */
+  --bs-body-bg:             #060e1c;
+  --bs-body-color:          #dce9ff;
+  --bs-secondary-bg:        #0b1830;
+  --bs-tertiary-bg:         #0f2040;
+  --bs-border-color:        rgba(20,184,166,0.14);
+  --bs-font-sans-serif:     'Nunito', system-ui, sans-serif;
+  --bs-font-monospace:      'JetBrains Mono', monospace;
+}
+
+/* ── Prevent ALL horizontal scroll ── */
+html, body {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+html { height: 100%; }
+
+body {
+  font-family: var(--sm-sans);
+  background: var(--sm-bg);
+  background-image:
+    radial-gradient(ellipse 70% 55% at 5% 0%, rgba(0,80,160,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 95% 100%, rgba(0,160,130,0.10) 0%, transparent 55%);
+  min-height: 100%;
+  color: var(--sm-text1);
+}
+
+/* ── Scrollbars ── */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(20,184,166,0.25); border-radius: 2px; }
+::selection { background: rgba(20,184,166,0.25); color: #fff; }
+
+/* ── Canvas ── */
+#bg-canvas {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0; opacity: 0.25;
+  width: 100vw; height: 100vh;
+}
+
+/* ═══════════════════════════════════════════════════════
+   LAYOUT — full viewport, no overflow
+═══════════════════════════════════════════════════════ */
+#app {
+  position: relative; z-index: 1;
+  display: flex;
+  width: 100vw;
+  height: 100dvh; /* dynamic viewport height — handles mobile browser chrome */
+  overflow: hidden;
+}
+
+/* ── SIDEBAR (desktop only) ── */
+#sidebar {
+  width: 268px;
+  min-width: 268px;
+  flex-shrink: 0;
+  height: 100%;
+  background: linear-gradient(180deg, var(--sm-surface) 0%, var(--sm-bg) 100%);
+  border-right: 1px solid var(--sm-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.28s ease, min-width 0.28s ease, opacity 0.2s;
+  position: relative;
+}
+#sidebar::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--sm-teal), transparent);
+  opacity: 0.35;
+}
+#sidebar.sb-hidden {
+  width: 0;
+  min-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.sb-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 6px 8px; }
+
+/* ── MAIN ── */
+#main {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TOPBAR
+═══════════════════════════════════════════════════════ */
+#topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: linear-gradient(180deg, var(--sm-surface), rgba(11,24,48,0.92));
+  border-bottom: 1px solid var(--sm-border);
+  backdrop-filter: blur(10px);
+  min-height: 52px;
+  width: 100%;
+}
+.btn-ham {
+  width: 34px; height: 34px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--sm-panel);
+  border: 1px solid var(--sm-border);
+  border-radius: 8px;
+  color: var(--sm-text2);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+}
+.btn-ham:hover { border-color: var(--sm-teal); color: var(--sm-teal); }
+#topbar-title {
+  font-family: var(--sm-serif);
+  font-style: italic;
+  font-size: 0.92rem;
+  color: var(--sm-text1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+.spec-badge-top {
+  font-size: 0.58rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 20px; flex-shrink: 0;
+}
+#spec-select {
+  font-size: 0.72rem;
+  max-width: 130px;
+  background: rgba(20,184,166,0.05);
+  border-color: var(--sm-border);
+  color: var(--sm-text1);
+  border-radius: 8px;
+  display: none;
+}
+#spec-select:focus { box-shadow: 0 0 0 0.2rem rgba(20,184,166,0.18); border-color: var(--sm-teal); }
+
+/* Desktop tab row */
+#tab-row {
+  display: none;
+  gap: 3px;
+}
+.tab-btn {
+  padding: 5px 13px; font-size: 0.73rem; font-weight: 700;
+  border: 1px solid transparent; border-radius: 8px;
+  color: var(--sm-text3); background: transparent;
+  cursor: pointer; transition: all 0.15s;
+  white-space: nowrap;
+  font-family: var(--sm-sans);
+  display: flex; align-items: center; gap: 4px;
+}
+.tab-btn:hover { color: var(--sm-text2); border-color: var(--sm-border); }
+.tab-btn.active { color: var(--sm-teal); border-color: rgba(20,184,166,0.3); background: rgba(20,184,166,0.08); }
+
+/* ═══════════════════════════════════════════════════════
+   SIDEBAR INTERNALS
+═══════════════════════════════════════════════════════ */
+.brand-icon {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, #0052a3, #00897b);
+  box-shadow: 0 0 18px rgba(0,137,123,0.35);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px;
+}
+.brand-name { font-family: var(--sm-serif); font-style: italic; font-size: 1rem; color: #fff; line-height: 1.15; }
+.brand-tag { font-size: 0.57rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--sm-text3); }
+
+.btn-new-session {
+  background: linear-gradient(135deg, rgba(0,82,163,0.3), rgba(0,137,123,0.2));
+  border: 1px solid rgba(20,184,166,0.25);
+  color: var(--sm-teal); font-weight: 700; font-size: 0.78rem;
+  border-radius: 10px; transition: all 0.2s;
+  width: 100%; padding: 9px 14px;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  cursor: pointer; font-family: var(--sm-sans);
+}
+.btn-new-session:hover {
+  background: linear-gradient(135deg, rgba(0,100,200,0.35), rgba(0,160,145,0.25));
+  border-color: var(--sm-teal); box-shadow: 0 0 20px rgba(20,184,166,0.2);
+}
+
+/* Search */
+.sb-search-group .input-group-text {
+  background: rgba(20,184,166,0.05);
+  border-color: var(--sm-border);
+  color: var(--sm-text3);
+}
+.sb-search-input {
+  background: rgba(20,184,166,0.04) !important;
+  border-color: var(--sm-border) !important;
+  color: var(--sm-text1) !important;
+  font-size: 0.79rem;
+}
+.sb-search-input:focus {
+  background: rgba(20,184,166,0.07) !important;
+  border-color: rgba(20,184,166,0.4) !important;
+  box-shadow: 0 0 0 0.2rem rgba(20,184,166,0.12) !important;
+}
+.sb-search-input::placeholder { color: var(--sm-text3) !important; }
+
+/* Filter accordion override */
+.sb-accordion .accordion-item { background: transparent !important; border: none !important; border-bottom: 1px solid var(--sm-border) !important; }
+.sb-accordion .accordion-button {
+  background: transparent !important; color: var(--sm-text3) !important;
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 8px 14px; box-shadow: none !important;
+  font-family: var(--sm-sans);
+}
+.sb-accordion .accordion-button:not(.collapsed) { color: var(--sm-text2) !important; }
+.sb-accordion .accordion-button::after { filter: invert(0.5); width: 14px; height: 14px; background-size: 14px; }
+.sb-accordion .accordion-body { padding: 4px 10px 10px; }
+
+/* Filter pills */
+.fpill {
+  padding: 2px 9px; font-size: 0.62rem; font-weight: 700;
+  border: 1px solid var(--sm-border); border-radius: 20px;
+  color: var(--sm-text3); background: transparent;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  font-family: var(--sm-sans);
+}
+.fpill:hover { border-color: rgba(20,184,166,0.4); color: var(--sm-text2); }
+.fpill.active { border-color: var(--sm-teal); color: var(--sm-teal); background: rgba(20,184,166,0.1); }
+
+/* Topic items */
+.topic-item {
+  padding: 9px 10px; border-radius: 10px; cursor: pointer;
+  border: 1px solid transparent; transition: all 0.15s;
+  margin-bottom: 2px; position: relative;
+}
+.topic-item:hover { background: rgba(20,184,166,0.05); border-color: var(--sm-border); }
+.topic-item.active {
+  background: rgba(20,184,166,0.09);
+  border-color: rgba(20,184,166,0.25);
+}
+.topic-item.active::before {
+  content: ''; position: absolute; left: -1px; top: 25%; bottom: 25%;
+  width: 2px; background: var(--sm-teal); border-radius: 0 2px 2px 0;
+}
+.topic-title {
+  font-size: 0.79rem; font-weight: 500; color: var(--sm-text2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.topic-item.active .topic-title, .topic-item:hover .topic-title { color: var(--sm-text1); }
+.sb-footer {
+  flex-shrink: 0; padding: 9px 14px;
+  border-top: 1px solid var(--sm-border);
+  font-size: 0.62rem; color: var(--sm-text3);
+  display: flex; justify-content: space-between;
+}
+
+/* ═══════════════════════════════════════════════════════
+   LANDING PAGE
+═══════════════════════════════════════════════════════ */
+#view-landing {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem 5rem;
+  position: relative;
+}
+.land-orb {
+  position: absolute; width: 450px; height: 450px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,82,163,0.14) 0%, transparent 70%);
+  pointer-events: none; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  animation: orb 7s ease-in-out infinite;
+}
+@keyframes orb { 0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.5} 50%{transform:translate(-50%,-50%) scale(1.08);opacity:.9} }
+.land-h1 { font-family: var(--sm-serif); font-style: italic; letter-spacing: -0.02em; line-height: 1.1; color: #fff; }
+.land-accent { color: var(--sm-teal); font-style: normal; }
+.stat-num { font-family: var(--sm-serif); font-size: 1.8rem; color: var(--sm-teal); line-height: 1; }
+.stat-lbl { font-size: 0.6rem; color: var(--sm-text3); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 2px; }
+.btn-cta {
+  padding: 12px 36px;
+  background: linear-gradient(135deg, rgba(0,82,163,0.4), rgba(0,160,130,0.3));
+  border: 1px solid rgba(20,184,166,0.4); border-radius: 50px;
+  color: #fff; font-family: var(--sm-sans); font-weight: 800; font-size: 0.9rem;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  cursor: pointer; transition: all 0.3s;
+}
+.btn-cta:hover { box-shadow: 0 0 50px rgba(20,184,166,0.3); transform: translateY(-2px); color: #fff; }
+.ex-btn {
+  background: rgba(255,255,255,0.02); border: 1px solid var(--sm-border);
+  border-radius: 10px; color: var(--sm-text2); font-size: 0.75rem;
+  cursor: pointer; transition: all 0.18s; padding: 10px 12px;
+  display: flex; align-items: flex-start; gap: 8px;
+  text-align: left; width: 100%; font-family: var(--sm-sans);
+}
+.ex-btn:hover { background: rgba(20,184,166,0.05); border-color: rgba(20,184,166,0.3); color: #fff; }
+
+/* ═══════════════════════════════════════════════════════
+   CHAT VIEW
+═══════════════════════════════════════════════════════ */
+#view-chat {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Message scroll area */
+#msg-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1.25rem 1rem 0.75rem;
+}
+
+/* Empty state */
+.ep-btn {
+  background: rgba(255,255,255,0.02); border: 1px solid var(--sm-border);
+  border-radius: 10px; color: var(--sm-text2); font-size: 0.75rem;
+  cursor: pointer; transition: all 0.15s; padding: 9px 12px;
+  display: flex; gap: 7px; align-items: flex-start;
+  text-align: left; width: 100%; font-family: var(--sm-sans);
+}
+.ep-btn:hover { background: rgba(20,184,166,0.05); border-color: rgba(20,184,166,0.3); color: #fff; }
+
+/* Message bubbles */
+.msg-row { display: flex; gap: 9px; margin-bottom: 1.1rem; animation: msgin 0.28s ease; }
+@keyframes msgin { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.msg-row.user-row { flex-direction: row-reverse; }
+.msg-avatar {
+  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 15px;
+}
+.av-user { background: linear-gradient(135deg, #004d33, #00897b); box-shadow: 0 0 14px rgba(0,137,123,0.3); }
+.av-ai   { background: linear-gradient(135deg, #001f77, #0044cc); box-shadow: 0 0 14px rgba(0,68,200,0.3); }
+.bubble { border-radius: 6px 14px 14px 14px; padding: 11px 14px; max-width: 88%; }
+.bubble-user {
+  background: linear-gradient(135deg, rgba(0,90,60,0.2), rgba(0,137,123,0.12));
+  border: 1px solid rgba(0,137,123,0.2);
+  border-radius: 14px 6px 14px 14px; max-width: 68%;
+  font-size: 0.87rem; white-space: pre-wrap; color: #fff; line-height: 1.65;
+}
+.bubble-ai {
+  background: rgba(9,21,38,0.85);
+  border: 1px solid var(--sm-border);
+  backdrop-filter: blur(8px);
+}
+
+/* Typing dots */
+.typing-dots { display: flex; gap: 5px; padding: 5px 2px; align-items: center; }
+.typing-dots span {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--sm-teal);
+  animation: tdot 1.4s ease infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: .2s; }
+.typing-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes tdot { 0%,80%,100%{transform:scale(.65);opacity:.25} 40%{transform:scale(1);opacity:1} }
+
+/* Prose */
+.prose { font-size: 0.86rem; line-height: 1.75; color: var(--sm-text1); }
+.prose h1 { font-family: var(--sm-serif); font-style: italic; font-size: 1.25rem; color: var(--sm-amber); margin: 1.1em 0 0.4em; }
+.prose h2 { font-family: var(--sm-serif); font-style: italic; font-size: 1.05rem; color: var(--sm-teal); margin: 0.95em 0 0.3em; padding-bottom: 0.25em; border-bottom: 1px solid var(--sm-border); }
+.prose h3 { font-size: 0.92rem; font-weight: 700; color: #06d6a0; margin: 0.85em 0 0.3em; }
+.prose h4 { font-size: 0.84rem; font-weight: 700; color: #a78bfa; margin: 0.75em 0 0.25em; }
+.prose p { margin: 0.55em 0; }
+.prose ul, .prose ol { margin: 0.4em 0 0.4em 1.4em; }
+.prose li { margin: 0.25em 0; color: var(--sm-text2); }
+.prose li::marker { color: var(--sm-teal); }
+.prose strong { color: var(--sm-amber); font-weight: 700; }
+.prose em { color: #06d6a0; }
+.prose a { color: var(--sm-teal); }
+.prose blockquote { border-left: 3px solid var(--sm-amber); padding: 0.5em 0 0.5em 1em; margin: 0.8em 0; background: rgba(245,158,11,0.1); border-radius: 0 10px 10px 0; color: #fcd34d; font-style: italic; }
+.prose hr { border: none; border-top: 1px solid var(--sm-border); margin: 1.2em 0; }
+.prose table { width: 100%; border-collapse: collapse; margin: 0.75em 0; font-size: 0.82rem; border-radius: 10px; overflow: hidden; }
+.prose th { background: rgba(0,70,160,0.28); color: #fff; padding: 7px 10px; text-align: left; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.05em; border-bottom: 1px solid var(--sm-border); }
+.prose td { padding: 6px 10px; border-bottom: 1px solid var(--sm-border); color: var(--sm-text2); }
+.prose tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+.prose code { font-family: var(--sm-mono); font-size: 0.8em; background: rgba(20,184,166,0.1); border: 1px solid var(--sm-border); padding: 0.1em 0.35em; border-radius: 4px; color: #5eead4; }
+.prose pre { background: #030a16; border: 1px solid var(--sm-border); border-radius: 10px; margin: 0.75em 0; overflow: hidden; }
+.prose pre code { background: transparent; border: none; padding: 0; font-size: 0.78rem; }
+.hljs { background: transparent; padding: 0.9rem 1.1rem; }
+
+/* Mermaid */
+.mermaid-wrap {
+  background: rgba(3,10,22,0.9); border: 1px solid rgba(20,184,166,0.2);
+  border-radius: 14px; padding: 1.2rem; margin: 0.75em 0; overflow-x: auto; position: relative;
+}
+.mermaid-wrap::before {
+  content: 'DIAGRAM'; position: absolute; top: 7px; right: 12px;
+  font-size: 0.52rem; font-weight: 700; letter-spacing: 0.15em; color: rgba(20,184,166,0.35); font-family: var(--sm-mono);
+}
+.mermaid-wrap svg { max-width: 100%; height: auto; }
+.mermaid-error { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.2); border-radius: 10px; padding: 0.75rem; color: #fda4af; font-family: var(--sm-mono); font-size: 0.73rem; white-space: pre-wrap; }
+
+/* ECG */
+.ecg-block {
+  font-family: var(--sm-mono); font-size: 0.7rem; line-height: 1.55;
+  background: #010d04; border: 1px solid rgba(0,230,100,0.2); border-radius: 10px;
+  padding: 0.9rem 1rem; color: #00e676; overflow-x: auto; white-space: pre; margin: 0.75em 0; position: relative;
+}
+.ecg-block::before { content: 'ECG DISPLAY'; position: absolute; top: 6px; right: 10px; font-size: 0.52rem; letter-spacing: 0.15em; color: rgba(0,230,100,0.4); }
+
+/* ═══════════════════════════════════════════════════════
+   INPUT AREA
+═══════════════════════════════════════════════════════ */
+#input-zone {
+  flex-shrink: 0;
+  padding: 8px 12px 12px;
+  background: linear-gradient(0deg, var(--sm-surface), rgba(11,24,48,0.9));
+  border-top: 1px solid var(--sm-border);
+  backdrop-filter: blur(10px);
+}
+.qp-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 7px; }
+.qp-btn {
+  padding: 3px 10px; font-size: 0.64rem; font-weight: 600;
+  border: 1px solid var(--sm-border); border-radius: 20px;
+  color: var(--sm-text3); background: transparent; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap; font-family: var(--sm-sans);
+}
+.qp-btn:hover { border-color: rgba(20,184,166,0.4); color: var(--sm-text1); background: rgba(20,184,166,0.04); }
+.input-shell {
+  background: rgba(20,184,166,0.03);
+  border: 1px solid rgba(20,184,166,0.22);
+  border-radius: 14px; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-shell:focus-within { border-color: rgba(20,184,166,0.5); box-shadow: 0 0 0 0.2rem rgba(20,184,166,0.12); }
+#msg-input {
+  background: transparent; border: none; outline: none;
+  color: var(--sm-text1); font-size: 0.87rem; line-height: 1.55; resize: none;
+  width: 100%; min-height: 42px; max-height: 120px; font-family: var(--sm-sans);
+  padding: 10px 13px 4px;
+}
+#msg-input::placeholder { color: var(--sm-text3); }
+.input-meta { padding: 0 12px 6px; font-size: 0.59rem; color: var(--sm-text3); display: flex; justify-content: space-between; }
+.btn-send {
+  width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(0,70,170,0.5), rgba(0,110,90,0.4));
+  border: 1px solid rgba(20,184,166,0.4); color: var(--sm-teal);
+  font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-send:hover { box-shadow: 0 0 22px rgba(20,184,166,0.25); transform: translateY(-1px); }
+.btn-send:disabled { opacity: 0.3; cursor: default; transform: none; box-shadow: none; }
+.btn-stop {
+  width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+  background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.25);
+  color: var(--sm-danger); font-size: 0.95rem;
+  display: none; align-items: center; justify-content: center; cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TAB PANES (Flashcards & Concepts)
+═══════════════════════════════════════════════════════ */
+.tab-pane-area {
+  flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1rem 1.1rem; display: none;
+}
+
+/* Flashcard flip */
+.fc-flip { perspective: 900px; cursor: pointer; min-height: 72px; }
+.fc-inner { position: relative; width: 100%; height: 100%; min-height: 72px; transition: transform 0.46s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; }
+.fc-flip.flipped .fc-inner { transform: rotateY(180deg); }
+.fc-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 10px; padding: 9px 12px; display: flex; flex-direction: column; justify-content: center; }
+.fc-front { background: linear-gradient(135deg, rgba(0,52,130,0.35), rgba(0,35,100,0.25)); border: 1px solid rgba(0,130,200,0.22); }
+.fc-back { background: linear-gradient(135deg, rgba(0,90,65,0.35), rgba(0,60,50,0.25)); border: 1px solid rgba(0,180,130,0.22); transform: rotateY(180deg); }
+.fc-lbl { font-size: 0.57rem; font-weight: 700; letter-spacing: 0.12em; margin-bottom: 4px; font-family: var(--sm-mono); }
+.fc-front .fc-lbl { color: rgba(100,180,255,0.6); }
+.fc-back .fc-lbl { color: rgba(0,200,150,0.6); }
+.fc-txt { font-size: 0.79rem; color: #fff; line-height: 1.45; }
+
+/* Concept card */
+.con-card {
+  background: rgba(167,139,250,0.05); border: 1px solid rgba(167,139,250,0.18);
+  border-radius: 10px; padding: 10px 12px; margin-bottom: 6px;
+  display: flex; gap: 8px; align-items: flex-start;
+  animation: msgin 0.25s ease;
+}
+
+/* ═══════════════════════════════════════════════════════
+   BOTTOM NAV (mobile only, < 992px)
+═══════════════════════════════════════════════════════ */
+#bottom-nav {
+  display: none; /* shown by JS on mobile when in chat */
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(11,24,48,0.95), var(--sm-bg));
+  border-top: 1px solid var(--sm-border);
+  backdrop-filter: blur(10px);
+  z-index: 1030;
+}
+.bnav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: 2px; padding: 8px 4px 6px;
+  color: var(--sm-text3); background: transparent; border: none;
+  font-size: 0.62rem; font-weight: 700; font-family: var(--sm-sans);
+  cursor: pointer; transition: color 0.15s;
+}
+.bnav-btn i { font-size: 1.25rem; }
+.bnav-btn.active, .bnav-btn:hover { color: var(--sm-teal); }
+
+/* ═══════════════════════════════════════════════════════
+   MODALS OVERRIDE
+═══════════════════════════════════════════════════════ */
+.modal-content {
+  background: var(--sm-surface); border: 1px solid rgba(20,184,166,0.35);
+  border-radius: 18px; box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+}
+.modal-header { border-bottom: 1px solid var(--sm-border); }
+.modal-footer { border-top: 1px solid var(--sm-border); }
+
+/* Study card */
+.study-card-wrap { perspective: 900px; cursor: pointer; }
+.study-card-inner { position: relative; width: 100%; min-height: 155px; transition: transform 0.5s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; }
+.study-card-wrap.flipped .study-card-inner { transform: rotateY(180deg); }
+.study-face, .study-back { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 14px; padding: 1.4rem; display: flex; flex-direction: column; justify-content: center; min-height: 155px; }
+.study-face { background: linear-gradient(145deg, rgba(0,55,155,0.45), rgba(0,38,115,0.35)); border: 1px solid rgba(0,130,220,0.3); }
+.study-back { background: linear-gradient(145deg, rgba(0,90,65,0.45), rgba(0,60,50,0.35)); border: 1px solid rgba(0,190,140,0.3); transform: rotateY(180deg); }
+.study-lbl { font-size: 0.63rem; font-weight: 700; letter-spacing: 0.14em; margin-bottom: 0.55rem; font-family: var(--sm-mono); }
+.study-face .study-lbl { color: rgba(100,175,255,0.7); }
+.study-back .study-lbl { color: rgba(0,210,155,0.7); }
+.study-txt { font-size: 0.95rem; color: #fff; line-height: 1.6; font-weight: 500; }
+.study-hint { font-size: 0.63rem; color: var(--sm-text3); margin-top: 0.7rem; text-align: center; }
+
+.modal-btn { padding: 6px 16px; font-size: 0.76rem; font-weight: 600; border-radius: 8px; font-family: var(--sm-sans); cursor: pointer; }
+.modal-btn-ghost { background: rgba(255,255,255,0.05); border: 1px solid var(--sm-border); color: var(--sm-text2); }
+.modal-btn-ghost:hover { border-color: rgba(20,184,166,0.4); color: var(--sm-text1); }
+.modal-btn-teal { background: rgba(20,184,166,0.12); border: 1px solid rgba(20,184,166,0.3); color: var(--sm-teal); }
+.modal-btn-danger { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.25); color: var(--sm-danger); }
+
+/* ═══════════════════════════════════════════════════════
+   OFFCANVAS (mobile sidebar)
+═══════════════════════════════════════════════════════ */
+.offcanvas { background: linear-gradient(180deg, var(--sm-surface) 0%, var(--sm-bg) 100%) !important; border-right: 1px solid var(--sm-border) !important; width: 280px !important; }
+.offcanvas-body { padding: 0; overflow-y: auto; overflow-x: hidden; }
+
+/* ═══════════════════════════════════════════════════════
+   HIGHLIGHT MENU
+═══════════════════════════════════════════════════════ */
+#hl-menu {
+  position: fixed; z-index: 9500;
+  background: var(--sm-surface); border: 1px solid rgba(20,184,166,0.4);
+  border-radius: 12px; padding: 5px;
+  display: none; flex-direction: column; gap: 3px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5); min-width: 185px;
+  animation: msgin 0.15s ease;
+}
+#hl-menu.show { display: flex; }
+.hl-prev { padding: 5px 10px; font-size: 0.66rem; color: var(--sm-text3); border-bottom: 1px solid var(--sm-border); margin-bottom: 2px; font-style: italic; max-height: 46px; overflow: hidden; line-height: 1.4; }
+.hl-btn { padding: 6px 10px; font-size: 0.76rem; font-weight: 600; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 7px; border: none; background: transparent; text-align: left; color: var(--sm-text2); font-family: var(--sm-sans); width: 100%; transition: all 0.15s; }
+.hl-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
+.hl-fc { color: var(--sm-teal) !important; }
+.hl-con { color: #a78bfa !important; }
+
+/* ═══════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════ */
+.toast { background: var(--sm-surface) !important; border: 1px solid var(--sm-border) !important; border-radius: 12px !important; font-family: var(--sm-sans); color: var(--sm-text1) !important; }
+.toast-body { font-size: 0.82rem; font-weight: 600; }
+
+/* ═══════════════════════════════════════════════════════
+   SPECIALTY BADGES
+═══════════════════════════════════════════════════════ */
+.sp-Cardiology{background:rgba(244,63,94,.14)!important;color:#fda4af!important}
+.sp-Respiratory{background:rgba(56,189,248,.12)!important;color:#7dd3fc!important}
+.sp-Nephrology{background:rgba(16,185,129,.12)!important;color:#6ee7b7!important}
+.sp-Neurology{background:rgba(167,139,250,.12)!important;color:#c4b5fd!important}
+.sp-Endocrinology{background:rgba(245,158,11,.12)!important;color:#fcd34d!important}
+.sp-Haematology{background:rgba(239,68,68,.12)!important;color:#fca5a5!important}
+.sp-Gastroenterology{background:rgba(249,115,22,.12)!important;color:#fdba74!important}
+.sp-Pharmacology{background:rgba(20,184,166,.12)!important;color:#5eead4!important}
+.sp-Infectious_Disease{background:rgba(236,72,153,.12)!important;color:#f9a8d4!important}
+.sp-Surgery{background:rgba(251,146,60,.12)!important;color:#fed7aa!important}
+.sp-Obstetrics{background:rgba(217,70,239,.1)!important;color:#e879f9!important}
+.sp-Paediatrics{background:rgba(99,102,241,.12)!important;color:#a5b4fc!important}
+.sp-Psychiatry{background:rgba(139,92,246,.12)!important;color:#c4b5fd!important}
+.sp-Orthopaedics{background:rgba(202,138,4,.12)!important;color:#fde68a!important}
+.sp-Ophthalmology{background:rgba(6,182,212,.12)!important;color:#67e8f9!important}
+.sp-ENT{background:rgba(52,211,153,.12)!important;color:#a7f3d0!important}
+.sp-Dermatology{background:rgba(253,186,116,.12)!important;color:#fdba74!important}
+.sp-Urology{background:rgba(96,165,250,.12)!important;color:#93c5fd!important}
+.sp-Oncology{background:rgba(220,38,38,.12)!important;color:#fca5a5!important}
+.sp-Rheumatology{background:rgba(236,72,153,.1)!important;color:#fbcfe8!important}
+.sp-Immunology{background:rgba(134,239,172,.1)!important;color:#86efac!important}
+.sp-Radiology{background:rgba(56,189,248,.1)!important;color:#bae6fd!important}
+.sp-Emergency{background:rgba(239,68,68,.16)!important;color:#f87171!important}
+.sp-ICU_Medicine{background:rgba(220,38,38,.16)!important;color:#f87171!important}
+.sp-Anatomy{background:rgba(103,232,249,.1)!important;color:#67e8f9!important}
+.sp-Physiology{background:rgba(52,211,153,.1)!important;color:#6ee7b7!important}
+.sp-Biochemistry{background:rgba(212,212,216,.1)!important;color:#d4d4d8!important}
+.sp-Pathology{background:rgba(251,113,133,.1)!important;color:#fda4af!important}
+.sp-Microbiology{background:rgba(74,222,128,.1)!important;color:#86efac!important}
+.sp-Embryology{background:rgba(196,181,253,.1)!important;color:#c4b5fd!important}
+.sp-Histology{background:rgba(167,139,250,.1)!important;color:#a78bfa!important}
+.sp-Genetics{background:rgba(110,231,183,.1)!important;color:#6ee7b7!important}
+.sp-Immunopathology{background:rgba(134,239,172,.1)!important;color:#86efac!important}
+.sp-Molecular_Biology{background:rgba(96,165,250,.1)!important;color:#93c5fd!important}
+.sp-Parasitology{background:rgba(217,249,157,.1)!important;color:#bef264!important}
+.sp-General{background:rgba(100,116,139,.1)!important;color:#94a3b8!important}
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════ */
+@media (max-width: 991.98px) {
+  #sidebar { display: none !important; }
+  #view-chat { padding-bottom: 0; }
+}
+@media (min-width: 992px) {
+  #bottom-nav { display: none !important; }
+  #tab-row { display: flex !important; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<!-- ════════════════════════════════════════
+     MOBILE OFFCANVAS SIDEBAR
+════════════════════════════════════════ -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="mob-sidebar">
+  <div class="offcanvas-header py-3 px-3 border-bottom" style="border-color:var(--sm-border)!important">
+    <div class="d-flex align-items-center gap-2">
+      <div class="brand-icon">⚕</div>
+      <div>
+        <div class="brand-name">SmartMedicine</div>
+        <div class="brand-tag">Dr. Agbesi · Deep Learning</div>
+      </div>
+    </div>
+    <button class="btn p-0 ms-auto" data-bs-dismiss="offcanvas" style="color:var(--sm-text3);font-size:1.1rem"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="offcanvas-body d-flex flex-column" style="padding:0">
+    <div id="mob-sb-content" class="d-flex flex-column flex-grow-1 overflow-hidden"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- ── DESKTOP SIDEBAR ── -->
+  <div id="sidebar">
+    <div class="d-flex align-items-center gap-2 px-3 py-3 flex-shrink-0 border-bottom" style="border-color:var(--sm-border)!important">
+      <div class="brand-icon">⚕</div>
+      <div>
+        <div class="brand-name">SmartMedicine</div>
+        <div class="brand-tag">Dr. Agbesi · Deep Learning</div>
+      </div>
+    </div>
+    <div id="sb-content" class="d-flex flex-column flex-grow-1 overflow-hidden"></div>
+    <div class="sb-footer">
+      <span id="stat-topics">0 topics</span>
+      <span id="stat-fc">0 flashcards</span>
+    </div>
+  </div>
+
+  <!-- ── MAIN ── -->
+  <div id="main">
+
+    <!-- TOPBAR -->
+    <div id="topbar">
+      <!-- Desktop: toggle sidebar -->
+      <button class="btn-ham d-none d-lg-flex" id="desk-toggle" onclick="toggleDesktopSb()" title="Toggle sidebar">
+        <i class="bi bi-layout-sidebar-inset" id="desk-toggle-icon"></i>
+      </button>
+      <!-- Mobile: open offcanvas -->
+      <button class="btn-ham d-flex d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#mob-sidebar" title="Menu">
+        <i class="bi bi-list"></i>
+      </button>
+
+      <span id="topbar-title" style="font-family:var(--sm-serif);font-style:italic;font-size:.92rem;color:var(--sm-text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0">SmartMedicine</span>
+
+      <span id="spec-badge" class="badge rounded-pill sp-General flex-shrink-0" style="font-size:.58rem"></span>
+
+      <select id="spec-select" class="form-select form-select-sm" onchange="updateSpecialty(this.value)"></select>
+
+      <!-- Desktop tabs -->
+      <div id="tab-row">
+        <button class="tab-btn active" id="tb-chat" onclick="switchTab('chat')"><i class="bi bi-chat-text"></i> Chat</button>
+        <button class="tab-btn" id="tb-fc" onclick="switchTab('fc')"><i class="bi bi-collection"></i> <span id="fc-lbl">Cards</span></button>
+        <button class="tab-btn" id="tb-con" onclick="switchTab('con')"><i class="bi bi-bookmark"></i> <span id="con-lbl">Saved</span></button>
+      </div>
+    </div>
+
+    <!-- ── LANDING VIEW ── -->
+    <div id="view-landing">
+      <div class="land-orb"></div>
+      <div class="text-center position-relative w-100" style="max-width:560px;z-index:1">
+        <div class="d-flex align-items-center justify-content-center gap-2 mb-3" style="font-size:.63rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--sm-teal)">
+          <div style="width:26px;height:1px;background:var(--sm-teal);opacity:.4"></div>
+          AI Medical Specialist · All Specialties
+          <div style="width:26px;height:1px;background:var(--sm-teal);opacity:.4"></div>
+        </div>
+        <h1 class="land-h1 mb-1" style="font-size:clamp(2.2rem,8vw,3.8rem)">Smart<span class="land-accent">Medicine</span></h1>
+        <p class="mb-4" style="font-size:.8rem;color:var(--sm-text2);letter-spacing:.14em;text-transform:uppercase;font-weight:600">Deep Learning System · Dr. Agbesi</p>
+        <p class="mb-4" style="font-size:.9rem;color:var(--sm-text2);line-height:1.75">
+          Built <strong style="color:var(--sm-text1)">exclusively for you</strong>. Every concept from
+          <span style="color:var(--sm-teal)">absolute first principles</span>.
+          Every mechanism visualised spatially. Every session leaves
+          <span style="color:var(--sm-teal)">zero unresolved doubts</span>.
+        </p>
+        <div class="d-flex justify-content-center gap-4 mb-4">
+          <div class="text-center"><div class="stat-num" id="ln-topics">0</div><div class="stat-lbl">Topics</div></div>
+          <div class="text-center"><div class="stat-num" id="ln-fc">0</div><div class="stat-lbl">Flashcards</div></div>
+          <div class="text-center"><div class="stat-num">35</div><div class="stat-lbl">Subjects</div></div>
+        </div>
+        <button class="btn-cta mb-5" onclick="newSession()">Begin Learning Session</button>
+        <div>
+          <div class="d-flex align-items-center gap-2 justify-content-center mb-3" style="font-size:.6rem;color:var(--sm-text3);letter-spacing:.18em;text-transform:uppercase">
+            <div class="flex-grow-1" style="height:1px;background:var(--sm-border)"></div>
+            Try asking
+            <div class="flex-grow-1" style="height:1px;background:var(--sm-border)"></div>
+          </div>
+          <div class="row g-2" id="land-ex"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CHAT VIEW ── -->
+    <div id="view-chat">
+      <!-- Message scroll -->
+      <div id="msg-scroll">
+        <div id="empty-state" class="text-center py-4">
+          <div style="font-size:2rem;opacity:.35;margin-bottom:.6rem">⚕</div>
+          <div style="font-family:var(--sm-serif);font-style:italic;font-size:1.05rem;color:var(--sm-text2);margin-bottom:.35rem">Ready to teach</div>
+          <div style="font-size:.78rem;color:var(--sm-text3);margin-bottom:1.2rem">Ask anything — topic, passage, ECG, diagram, drug, or contrast</div>
+          <div class="row g-2 mx-auto" style="max-width:460px" id="empty-prompts"></div>
+        </div>
+        <div id="msg-container"></div>
+      </div>
+
+      <!-- Flashcards pane -->
+      <div class="tab-pane-area" id="pane-fc">
+        <div class="text-center py-5" id="fc-empty">
+          <div style="font-size:2rem;opacity:.35;margin-bottom:.6rem">🃏</div>
+          <div style="font-family:var(--sm-serif);font-style:italic;color:var(--sm-text2)">No flashcards yet</div>
+          <div style="font-size:.78rem;color:var(--sm-text3);margin-top:.4rem">Auto-generated from sessions, or highlight any AI text to save manually</div>
+        </div>
+        <div id="fc-content" style="display:none">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div style="font-family:var(--sm-serif);font-style:italic;font-size:1.05rem" id="fc-count-lbl"></div>
+            <button class="btn btn-sm rounded-pill fw-bold" id="study-btn"
+              style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.25);color:var(--sm-amber);font-size:.72rem;letter-spacing:.04em"
+              onclick="openStudy()">
+              <i class="bi bi-play-fill me-1"></i>Study Mode
+            </button>
+          </div>
+          <div id="fc-grid" class="d-flex flex-column gap-2"></div>
+        </div>
+      </div>
+
+      <!-- Concepts pane -->
+      <div class="tab-pane-area" id="pane-con">
+        <div class="text-center py-5" id="con-empty">
+          <div style="font-size:2rem;opacity:.35;margin-bottom:.6rem">📌</div>
+          <div style="font-family:var(--sm-serif);font-style:italic;color:var(--sm-text2)">No saved concepts</div>
+          <div style="font-size:.78rem;color:var(--sm-text3);margin-top:.4rem">Highlight any AI text and choose "Save"</div>
+        </div>
+        <div id="con-list"></div>
+      </div>
+
+      <!-- Input zone (only shown in chat tab) -->
+      <div id="input-zone">
+        <div class="qp-row" id="qp-row"></div>
+        <div class="d-flex gap-2 align-items-end">
+          <div class="input-shell flex-grow-1">
+            <textarea id="msg-input" rows="3"
+              placeholder="Ask anything in medicine — topic, passage, ECG, drug mechanism, diagram…"
+              onkeydown="handleKey(event)" oninput="updateCC()"></textarea>
+            <div class="input-meta">
+              <span>Shift+Enter for new line · Enter to send</span>
+              <span id="char-count" style="transition:color .2s">0/4000</span>
+            </div>
+          </div>
+          <button class="btn-send" id="send-btn" onclick="sendMessage()" disabled>
+            <i class="bi bi-arrow-up-short"></i>
+          </button>
+          <button class="btn-stop d-flex" id="stop-btn" onclick="stopStream()">
+            <i class="bi bi-stop-fill"></i>
+          </button>
+        </div>
+      </div>
+    </div><!-- /view-chat -->
+
+    <!-- BOTTOM NAV (mobile) -->
+    <div id="bottom-nav">
+      <div class="d-flex w-100">
+        <button class="bnav-btn active" id="bn-chat" onclick="switchTab('chat')"><i class="bi bi-chat-text"></i><span>Chat</span></button>
+        <button class="bnav-btn" id="bn-fc" onclick="switchTab('fc')"><i class="bi bi-collection"></i><span id="bn-fc-lbl">Cards</span></button>
+        <button class="bnav-btn" id="bn-con" onclick="switchTab('con')"><i class="bi bi-bookmark"></i><span id="bn-con-lbl">Saved</span></button>
+        <button class="bnav-btn" data-bs-toggle="offcanvas" data-bs-target="#mob-sidebar"><i class="bi bi-list"></i><span>Topics</span></button>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ════════ HIGHLIGHT MENU ════════ -->
+<div id="hl-menu">
+  <div class="hl-prev" id="hl-prev"></div>
+  <button class="hl-btn hl-fc" onclick="hlAction('fc')"><i class="bi bi-collection-fill"></i> Add to Flashcards</button>
+  <button class="hl-btn hl-con" onclick="hlAction('con')"><i class="bi bi-bookmark-fill"></i> Save as Key Concept</button>
+  <button class="hl-btn" onclick="closeHlMenu()" style="color:var(--sm-text3)"><i class="bi bi-x"></i> Cancel</button>
+</div>
+
+<!-- ════════ STUDY MODAL ════════ -->
+<div class="modal fade" id="studyModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:510px">
+    <div class="modal-content">
+      <div class="modal-header py-2 px-3">
+        <h6 class="modal-title mb-0" style="font-family:var(--sm-serif);font-style:italic"><i class="bi bi-mortarboard me-2" style="color:var(--sm-teal)"></i>Study Mode</h6>
+        <button class="btn p-0 ms-auto" data-bs-dismiss="modal" style="color:var(--sm-text3)"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body p-3">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <div class="flex-grow-1" style="height:4px;background:var(--sm-border);border-radius:2px;overflow:hidden">
+            <div id="study-prog" style="height:100%;background:linear-gradient(90deg,var(--sm-teal),#06d6a0);transition:width .3s;border-radius:2px"></div>
+          </div>
+          <span id="study-counter" style="font-size:.65rem;color:var(--sm-text3);font-family:var(--sm-mono);white-space:nowrap"></span>
+        </div>
+        <div class="study-card-wrap" id="study-card" onclick="flipStudy()">
+          <div class="study-card-inner">
+            <div class="study-face"><div class="study-lbl">QUESTION</div><div class="study-txt" id="study-q"></div><div class="study-hint">Click to reveal mechanism</div></div>
+            <div class="study-back"><div class="study-lbl">MECHANISM</div><div class="study-txt" id="study-a"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer py-2 px-3 gap-2 flex-wrap">
+        <button class="modal-btn modal-btn-ghost" id="study-prev" onclick="studyNav(-1)" disabled>← Prev</button>
+        <button class="modal-btn modal-btn-teal" onclick="flipStudy()"><i class="bi bi-arrow-repeat me-1"></i>Flip</button>
+        <button class="modal-btn modal-btn-ghost" id="study-next" onclick="studyNav(1)">Next →</button>
+        <button class="modal-btn modal-btn-danger ms-auto" data-bs-dismiss="modal"><i class="bi bi-x me-1"></i>Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ DELETE MODAL ════════ -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:300px">
+    <div class="modal-content">
+      <div class="modal-header py-2 px-3">
+        <h6 class="modal-title mb-0" style="font-family:var(--sm-serif);font-style:italic">Delete this topic?</h6>
+        <button class="btn p-0 ms-auto" data-bs-dismiss="modal" style="color:var(--sm-text3)"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body px-3 py-2" style="font-size:.82rem;color:var(--sm-text2);line-height:1.5">
+        All messages, flashcards and saved concepts will be permanently removed.
+      </div>
+      <div class="modal-footer py-2 px-3 gap-2">
+        <button class="modal-btn modal-btn-ghost flex-grow-1" data-bs-dismiss="modal">Cancel</button>
+        <button class="modal-btn modal-btn-danger flex-grow-1 fw-bold" onclick="confirmDelete()"><i class="bi bi-trash me-1"></i>Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ TOAST ════════ -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:99999">
+  <div id="app-toast" class="toast align-items-center" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-msg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ BOOTSTRAP JS ════════ -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/* ══ CANVAS ════════════════════════════════════════════════════════ */
+(function(){
+  const cv=document.getElementById('bg-canvas'),cx=cv.getContext('2d');
+  let W,H,pts=[];
+  const rs=()=>{W=cv.width=innerWidth;H=cv.height=innerHeight};
+  const ip=()=>{pts=Array.from({length:45},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.15,vy:(Math.random()-.5)*.15,r:Math.random()*1+.3,a:Math.random()*.3+.06,col:Math.random()>.55?'20,184,166':Math.random()>.5?'56,189,248':'100,150,255'}))};
+  const draw=()=>{
+    cx.clearRect(0,0,W,H);
+    cx.strokeStyle='rgba(20,184,166,0.02)';cx.lineWidth=1;
+    for(let i=0;i<W;i+=90){cx.beginPath();cx.moveTo(i,0);cx.lineTo(i,H);cx.stroke()}
+    for(let i=0;i<H;i+=90){cx.beginPath();cx.moveTo(0,i);cx.lineTo(W,i);cx.stroke()}
+    pts.forEach((p,i)=>{
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;
+      cx.beginPath();cx.arc(p.x,p.y,p.r,0,Math.PI*2);cx.fillStyle=`rgba(${p.col},${p.a})`;cx.fill();
+      for(let j=i+1;j<pts.length;j++){
+        const dx=pts[j].x-p.x,dy=pts[j].y-p.y,d=Math.sqrt(dx*dx+dy*dy);
+        if(d<110){cx.beginPath();cx.moveTo(p.x,p.y);cx.lineTo(pts[j].x,pts[j].y);cx.strokeStyle=`rgba(20,184,166,${.045*(1-d/110)})`;cx.lineWidth=.5;cx.stroke()}
+      }
+    });
+    requestAnimationFrame(draw);
+  };
+  window.addEventListener('resize',()=>{rs();ip()});rs();ip();draw();
+})();
+
+/* ══ MERMAID + MARKED ══════════════════════════════════════════════ */
+mermaid.initialize({startOnLoad:false,theme:'dark',themeVariables:{background:'#030a18',primaryColor:'#0a2050',primaryTextColor:'#dce9ff',primaryBorderColor:'#1a4080',lineColor:'#14b8a6',secondaryColor:'#0a3040',tertiaryColor:'#0f1e3a',titleColor:'#f59e0b',nodeTextColor:'#dce9ff',edgeLabelBackground:'#0a1830',fontFamily:"'JetBrains Mono',monospace",fontSize:'12px',clusterBkg:'#0a1828'},flowchart:{htmlLabels:true,curve:'basis',padding:14},sequence:{actorMargin:60,messageMargin:40}});
+marked.setOptions({breaks:true,gfm:true});
+
+/* ══ CONFIG ════════════════════════════════════════════════════════ */
+const API = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
+  ? 'http://localhost:3001/api'
+  : '/api';
+
+/* ── safeFetch: prevents the HTML-returned-as-JSON SyntaxError ── */
+async function safeFetch(url, opts={}) {
+  const res = await fetch(url, opts);
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) {
+    const txt = await res.text();
+    throw new Error(`Backend unavailable (${res.status}). Is Render running? ${txt.slice(0,80)}`);
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({error:`HTTP ${res.status}`}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+const SUBJECTS = {
+  'Clinical Specialties': ['Cardiology','Respiratory','Nephrology','Neurology','Endocrinology','Haematology','Gastroenterology','Pharmacology','Infectious Disease','Surgery','Obstetrics','Paediatrics','Psychiatry','Orthopaedics','Ophthalmology','ENT','Dermatology','Urology','Oncology','Rheumatology','Immunology','Radiology','Emergency','ICU Medicine'],
+  'Basic Sciences': ['Anatomy','Physiology','Biochemistry','Pathology','Microbiology','Embryology','Histology','Genetics','Immunopathology','Molecular Biology','Parasitology'],
+  'Other': ['General']
+};
+
+const QPS = [
+  {i:'🫀',l:'First Principles',p:'Teach from absolute first principles (Layer 0→5): '},
+  {i:'📊',l:'Flowchart',p:'Draw a mermaid flowchart for the mechanism of: '},
+  {i:'⚡',l:'ECG',p:'Draw an ECG grid and teach the mechanism of: '},
+  {i:'🔬',l:'Compare',p:'Compare and find the exact divergence step between: '},
+  {i:'💊',l:'Drug Mechanism',p:'Step-by-step drug mechanism from receptor to clinical effect: '},
+  {i:'🃏',l:'Flashcards',p:'Generate 5 mechanistic flashcards on: '},
+  {i:'🩺',l:'Ward Round',p:'Walk me into the ward — patient presents with: '},
+  {i:'🧬',l:'Basic Science',p:'Explain from basic science first principles: '},
+];
+const LAND_EX = [
+  {i:'🫀',q:'Coronary anatomy — trace LAD, LCX, RCA, PDA with the fist method'},
+  {i:'⚡',q:'Draw ECG grid — explain P wave, QRS, T wave spatially'},
+  {i:'🔬',q:'DKA vs HHS — the exact divergence step with mermaid diagram'},
+  {i:'🩺',q:'RAAS system — full mermaid flowchart with all feedback loops'},
+  {i:'💊',q:'Beta-blockers in heart failure — Layer 0 to Layer 5'},
+  {i:'🧬',q:'Action potential — spatial step by step'},
+];
+const EMPTY_EX = [
+  {i:'🫀',q:'Coronary anatomy with the fist method'},
+  {i:'⚡',q:'ECG grid — explain every wave spatially'},
+  {i:'🔬',q:'DKA vs HHS divergence point'},
+  {i:'🩺',q:'RAAS with mermaid flowchart'},
+];
+
+/* ══ STATE ════════════════════════════════════════════════════════ */
+let topics=[], activeId=null, activeTopic=null;
+let messages=[], flashcards=[], concepts=[];
+let loading=false, activeFilter='All', activeTab='chat';
+let deskSbOpen=true, mmCount=0;
+let abortCtrl=null, deleteTarget=null;
+let studyCards=[], studyIdx=0, studyFlipped=false;
+let hlText='', hlTopicId=null;
+let studyModal, deleteModal, mobSidebar, toastInst;
+
+/* ══ INIT ════════════════════════════════════════════════════════ */
+function init() {
+  buildSbShared();        // build sidebar content (search, filter, topic list)
+  buildLandExamples();
+  buildEmptyPrompts();
+  buildQPRow();
+  buildSpecSelect();
+
+  studyModal  = new bootstrap.Modal(document.getElementById('studyModal'));
+  deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+  mobSidebar  = new bootstrap.Offcanvas(document.getElementById('mob-sidebar'));
+  toastInst   = new bootstrap.Toast(document.getElementById('app-toast'), {delay:2800});
+
+  document.addEventListener('mousedown', e => { if (!e.target.closest('#hl-menu')) closeHlMenu(); });
+  setupHighlight();
+  loadTopics();
+}
+
+/* ══ SIDEBAR SHARED CONTENT ═══════════════════════════════════════
+   Builds the inner content (search + filter + topic list) and
+   places it in BOTH the desktop sidebar and mobile offcanvas.
+   No brand duplication — brand is in each wrapper separately.
+══════════════════════════════════════════════════════════════════ */
+function buildSbShared() {
+  const html = `
+    <div class="px-3 pt-2 pb-2 border-bottom flex-shrink-0" style="border-color:var(--sm-border)!important">
+      <div class="input-group input-group-sm sb-search-group">
+        <span class="input-group-text"><i class="bi bi-search" style="font-size:12px"></i></span>
+        <input type="text" class="form-control sb-search-input" id="topic-search" placeholder="Search topics…" oninput="renderTopics()"/>
+      </div>
+    </div>
+    <div class="px-3 pt-2 pb-1 flex-shrink-0">
+      <button class="btn-new-session" onclick="newSession()">
+        <i class="bi bi-plus-lg"></i> New Learning Session
+      </button>
+    </div>
+    <div class="accordion accordion-flush border-top sb-accordion flex-shrink-0" style="border-color:var(--sm-border)!important">
+      <div class="accordion-item">
+        <h2 class="accordion-header">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#sb-filter-body">
+            Filter by Subject
+          </button>
+        </h2>
+        <div id="sb-filter-body" class="accordion-collapse collapse show">
+          <div class="accordion-body">
+            <div class="d-flex flex-wrap gap-1" id="filter-pills">
+              <button class="fpill active" onclick="setFilter('All',this)">All</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sb-scroll" id="topic-list-wrap">
+      <div id="topic-list"></div>
+    </div>`;
+
+  document.getElementById('sb-content').innerHTML = html;
+
+  // Clone to mobile offcanvas (without brand - brand is in offcanvas-header)
+  document.getElementById('mob-sb-content').innerHTML = html;
+
+  buildFilterPills();
+}
+
+function buildFilterPills() {
+  document.querySelectorAll('#filter-pills').forEach(wrap => {
+    for (const [grp, subs] of Object.entries(SUBJECTS)) {
+      const lbl = document.createElement('span');
+      lbl.style.cssText = 'font-size:.57rem;color:var(--sm-text3);letter-spacing:.1em;text-transform:uppercase;width:100%;padding-top:4px;font-weight:600';
+      lbl.textContent = grp;
+      wrap.appendChild(lbl);
+      subs.forEach(s => {
+        const b = document.createElement('button');
+        b.className = 'fpill'; b.textContent = s;
+        b.onclick = () => setFilter(s);
+        wrap.appendChild(b);
+      });
+    }
+  });
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll('.fpill').forEach(p => p.classList.toggle('active', p.textContent===f));
+  renderTopics();
+}
+
+function buildLandExamples() {
+  const g = document.getElementById('land-ex');
+  LAND_EX.forEach(e => {
+    const col = document.createElement('div'); col.className = 'col-6 col-md-4';
+    const btn = document.createElement('button');
+    btn.className = 'ex-btn h-100 w-100';
+    btn.innerHTML = `<span style="font-size:.9rem;flex-shrink:0">${e.i}</span><span style="font-size:.74rem">${esc(e.q)}</span>`;
+    btn.onclick = () => quickStart(e.q);
+    col.appendChild(btn); g.appendChild(col);
+  });
+}
+
+function buildEmptyPrompts() {
+  const g = document.getElementById('empty-prompts');
+  EMPTY_EX.forEach(e => {
+    const col = document.createElement('div'); col.className = 'col-6';
+    const btn = document.createElement('button');
+    btn.className = 'ep-btn';
+    btn.innerHTML = `<span>${e.i}</span><span>${esc(e.q)}</span>`;
+    btn.onclick = () => injectPrompt(e.q);
+    col.appendChild(btn); g.appendChild(col);
+  });
+}
+
+function buildQPRow() {
+  const row = document.getElementById('qp-row');
+  QPS.forEach(q => {
+    const b = document.createElement('button');
+    b.className = 'qp-btn';
+    b.innerHTML = `${q.i} ${q.l}`;
+    b.onclick = () => injectPrompt(q.p);
+    row.appendChild(b);
+  });
+}
+
+function buildSpecSelect() {
+  const sel = document.getElementById('spec-select');
+  for (const [grp, subs] of Object.entries(SUBJECTS)) {
+    const og = document.createElement('optgroup'); og.label = grp;
+    subs.forEach(s => { const o = document.createElement('option'); o.value=s; o.textContent=s; og.appendChild(o); });
+    sel.appendChild(og);
+  }
+}
+
+/* ══ DESKTOP SIDEBAR TOGGLE ════════════════════════════════════════ */
+function toggleDesktopSb() {
+  deskSbOpen = !deskSbOpen;
+  document.getElementById('sidebar').classList.toggle('sb-hidden', !deskSbOpen);
+  document.getElementById('desk-toggle-icon').className = deskSbOpen
+    ? 'bi bi-layout-sidebar-inset'
+    : 'bi bi-layout-sidebar-inset-reverse';
+}
+
+/* ══ TOPICS ════════════════════════════════════════════════════════ */
+async function loadTopics() {
+  try {
+    topics = await safeFetch(`${API}/topics`);
+    renderTopics(); updateStats();
+  } catch(e) {
+    console.warn('loadTopics:', e.message);
+    showToast('⚠ ' + e.message, 'danger');
+  }
+}
+
+function renderTopics() {
+  const lists = document.querySelectorAll('#topic-list');
+  const search = (document.getElementById('topic-search')?.value || '').toLowerCase();
+  const filtered = topics.filter(t =>
+    (activeFilter==='All' || t.specialty===activeFilter) &&
+    (!search || t.title.toLowerCase().includes(search))
+  );
+  lists.forEach(list => {
+    list.innerHTML = '';
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="text-center py-4" style="font-size:.75rem;color:var(--sm-text3)">${topics.length===0?'Start your first session →':'No topics found'}</div>`;
+      return;
+    }
+    filtered.forEach(t => {
+      const sc = 'sp-'+t.specialty.replace(/ /g,'_');
+      const d = document.createElement('div');
+      d.className = 'topic-item' + (t.id===activeId?' active':'');
+      d.innerHTML = `
+        <div class="topic-title">${esc(t.title)}</div>
+        <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
+          <span class="badge rounded-pill ${sc}" style="font-size:.54rem">${t.specialty}</span>
+          ${t.message_count>0?`<span style="font-size:.59rem;color:var(--sm-text3)"><i class="bi bi-chat-text"></i> ${t.message_count}</span>`:''}
+          ${t.flashcard_count>0?`<span style="font-size:.59rem;color:var(--sm-amber)"><i class="bi bi-collection"></i> ${t.flashcard_count}</span>`:''}
+          ${t.id===activeId?`<span class="ms-auto d-flex gap-1">
+            <button class="btn p-0" style="color:var(--sm-text3);font-size:.68rem" onclick="event.stopPropagation();renameTopic('${t.id}')" title="Rename"><i class="bi bi-pencil"></i></button>
+            <button class="btn p-0" style="color:var(--sm-text3);font-size:.68rem" onclick="event.stopPropagation();askDelete('${t.id}')" title="Delete"><i class="bi bi-trash"></i></button>
+          </span>`:''}
+        </div>`;
+      d.onclick = () => { selectTopic(t.id); if(window.innerWidth<992) mobSidebar.hide(); };
+      list.appendChild(d);
+    });
+  });
+}
+
+function updateStats() {
+  const totalFc = topics.reduce((a,t)=>a+(t.flashcard_count||0),0);
+  document.getElementById('stat-topics').textContent = topics.length+' topics';
+  document.getElementById('stat-fc').textContent = totalFc+' flashcards';
+  document.getElementById('ln-topics').textContent = topics.length;
+  document.getElementById('ln-fc').textContent = totalFc;
+}
+
+async function newSession(pre) {
+  try {
+    const t = await safeFetch(`${API}/topics`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({title:'New Session', specialty:'General'})
+    });
+    topics.unshift({...t, message_count:0, flashcard_count:0});
+    renderTopics(); updateStats();
+    await selectTopic(t.id);
+    if (pre) { injectPrompt(pre); sendMessage(); }
+  } catch(e) {
+    showToast('⚠ ' + e.message, 'danger');
+  }
+}
+
+function quickStart(q) { newSession(q); }
+
+async function selectTopic(id) {
+  activeId = id; activeTab = 'chat';
+  try {
+    const [td, fcs, cons] = await Promise.all([
+      safeFetch(`${API}/topics/${id}`),
+      safeFetch(`${API}/flashcards/topic/${id}`),
+      safeFetch(`${API}/concepts/topic/${id}`)
+    ]);
+    activeTopic = td; messages = td.messages||[];
+    flashcards = fcs; concepts = cons;
+
+    document.getElementById('topbar-title').textContent = td.title;
+    const badge = document.getElementById('spec-badge');
+    badge.textContent = td.specialty||'General';
+    badge.className = `badge rounded-pill sp-${(td.specialty||'General').replace(/ /g,'_')} flex-shrink-0`;
+    document.getElementById('spec-select').value = td.specialty||'General';
+    document.getElementById('spec-select').style.display = 'block';
+    document.getElementById('tab-row').style.display = 'flex';
+  } catch(e) {
+    messages=[]; flashcards=[]; concepts=[];
+    showToast('⚠ '+e.message, 'danger');
+  }
+
+  // Switch to chat view
+  document.getElementById('view-landing').style.display = 'none';
+  const vc = document.getElementById('view-chat');
+  vc.style.display = 'flex';
+
+  // Show bottom nav on mobile
+  if (window.innerWidth < 992) {
+    document.getElementById('bottom-nav').style.display = 'block';
+  }
+
+  switchTab('chat');
+  renderMessages(); renderFlashcards(); renderConcepts();
+  updateTabLabels(); renderTopics();
+  scrollBottom();
+}
+
+async function updateSpecialty(s) {
+  if (!activeId) return;
+  try {
+    await safeFetch(`${API}/topics/${activeId}`, {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({specialty:s})});
+    if (activeTopic) activeTopic.specialty = s;
+    const t = topics.find(x=>x.id===activeId); if(t) t.specialty=s;
+    const badge = document.getElementById('spec-badge');
+    badge.textContent = s; badge.className = `badge rounded-pill sp-${s.replace(/ /g,'_')} flex-shrink-0`;
+    renderTopics();
+  } catch(e) { showToast('⚠ '+e.message,'danger'); }
+}
+
+function renameTopic(id) {
+  const t=topics.find(x=>x.id===id); if(!t)return;
+  const v=prompt('Rename:',t.title); if(!v?.trim())return;
+  safeFetch(`${API}/topics/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:v.trim()})}).catch(()=>{});
+  t.title=v.trim();
+  if(activeTopic?.id===id){activeTopic.title=v.trim();document.getElementById('topbar-title').textContent=v.trim();}
+  renderTopics();
+}
+
+function askDelete(id) { deleteTarget=id; deleteModal.show(); }
+async function confirmDelete() {
+  deleteModal.hide();
+  try { await safeFetch(`${API}/topics/${deleteTarget}`,{method:'DELETE'}); } catch(e){}
+  topics = topics.filter(t=>t.id!==deleteTarget);
+  if (activeId===deleteTarget) {
+    activeId=null; activeTopic=null; messages=[]; flashcards=[]; concepts=[];
+    document.getElementById('view-chat').style.display='none';
+    document.getElementById('view-landing').style.display='flex';
+    document.getElementById('spec-select').style.display='none';
+    document.getElementById('tab-row').style.display='none';
+    document.getElementById('topbar-title').textContent='SmartMedicine';
+    document.getElementById('spec-badge').textContent='';
+    document.getElementById('bottom-nav').style.display='none';
+  }
+  deleteTarget=null; renderTopics(); updateStats();
+}
+
+/* ══ TABS ══════════════════════════════════════════════════════════ */
+function switchTab(tab) {
+  activeTab = tab;
+  // Message scroll / input
+  document.getElementById('msg-scroll').style.display = tab==='chat' ? 'block' : 'none';
+  document.getElementById('input-zone').style.display  = tab==='chat' ? 'block' : 'none';
+  // Panes
+  document.getElementById('pane-fc').style.display  = tab==='fc'  ? 'block' : 'none';
+  document.getElementById('pane-con').style.display = tab==='con' ? 'block' : 'none';
+  // Desktop tab buttons
+  ['chat','fc','con'].forEach(t => {
+    document.getElementById('tb-'+t)?.classList.toggle('active', t===tab);
+    document.getElementById('bn-'+t)?.classList.toggle('active', t===tab);
+  });
+  // When switching back to chat, scroll to bottom
+  if (tab==='chat') scrollBottom();
+}
+
+function updateTabLabels() {
+  const fcL = flashcards.length ? `Cards (${flashcards.length})` : 'Cards';
+  const conL = concepts.length  ? `Saved (${concepts.length})`  : 'Saved';
+  ['fc-lbl','bn-fc-lbl'].forEach(id => { const el=document.getElementById(id); if(el)el.textContent=fcL; });
+  ['con-lbl','bn-con-lbl'].forEach(id => { const el=document.getElementById(id); if(el)el.textContent=conL; });
+}
+
+/* ══ CHAT ══════════════════════════════════════════════════════════ */
+function injectPrompt(t) { const el=document.getElementById('msg-input'); el.value=t; el.focus(); updateCC(); }
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+function updateCC() {
+  const v=document.getElementById('msg-input').value;
+  const cc=document.getElementById('char-count');
+  cc.textContent=v.length+'/4000';
+  cc.style.color=v.length>3800?'var(--sm-danger)':'';
+  document.getElementById('send-btn').disabled=!v.trim()||loading;
+}
+
+async function sendMessage() {
+  const el=document.getElementById('msg-input');
+  const txt=el.value.trim();
+  if(!txt||loading||!activeId)return;
+  el.value=''; updateCC();
+  messages.push({role:'user',content:txt});
+  messages.push({role:'assistant',content:''});
+  renderMessages(); scrollBottom(); setLoading(true);
+  const hist=messages.slice(0,-1).map(m=>({role:m.role,content:m.content}));
+  try {
+    abortCtrl=new AbortController();
+    // Raw fetch for SSE — safeFetch won't work for streaming
+    const res=await fetch(`${API}/chat`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:hist,topic_id:activeId}),
+      signal:abortCtrl.signal
+    });
+    if(!res.ok){
+      const txt2=await res.text();
+      throw new Error(`Server ${res.status}: ${txt2.slice(0,120)}`);
+    }
+    const reader=res.body.getReader();const dec=new TextDecoder();let buf='';
+    while(true){
+      const{done,value}=await reader.read();if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');buf=lines.pop()||'';
+      for(const line of lines){
+        if(!line.startsWith('data: '))continue;
+        try{
+          const d=JSON.parse(line.slice(6));
+          if(d.type==='delta'){messages[messages.length-1].content+=d.text;updateLastBubble();}
+          if(d.type==='error'){showToast('⚠ AI error: '+d.error,'danger');}
+          if(d.type==='done'){
+            try{flashcards=await safeFetch(`${API}/flashcards/topic/${activeId}`);renderFlashcards();updateTabLabels();await loadTopics();}catch(e){}
+          }
+        }catch{}
+      }
+    }
+  }catch(e){
+    if(e.name!=='AbortError'){messages[messages.length-1].content='❌ '+e.message;renderMessages();showToast('⚠ '+e.message,'danger');}
+  }
+  setLoading(false);scrollBottom();
+}
+
+function stopStream(){abortCtrl?.abort();setLoading(false);}
+function setLoading(v){
+  loading=v;
+  document.getElementById('send-btn').style.display=v?'none':'flex';
+  document.getElementById('stop-btn').style.display=v?'flex':'none';
+}
+
+/* ══ RENDER ════════════════════════════════════════════════════════ */
+function renderMessages(){
+  const es=document.getElementById('empty-state');
+  const mc=document.getElementById('msg-container');
+  es.style.display=messages.length===0?'block':'none';
+  mc.innerHTML='';
+  messages.forEach((m,i)=>{
+    const row=document.createElement('div');
+    row.className='msg-row'+(m.role==='user'?' user-row':'');
+    const av=document.createElement('div');
+    av.className='msg-avatar '+(m.role==='user'?'av-user':'av-ai');
+    av.textContent=m.role==='user'?'👨‍⚕️':'⚕';
+    const bub=document.createElement('div');
+    bub.id='bub-'+i;
+    if(m.role==='user'){
+      bub.className='bubble bubble-user';bub.textContent=m.content;
+    }else{
+      bub.className='bubble bubble-ai';
+      if(!m.content&&loading&&i===messages.length-1){
+        bub.innerHTML='<div class="typing-dots"><span></span><span></span><span></span></div>';
+      }else{
+        bub.classList.add('prose');bub.innerHTML=parseAI(m.content);
+      }
+    }
+    row.appendChild(av);row.appendChild(bub);mc.appendChild(row);
+  });
+  setTimeout(()=>{renderMermaidAll();document.querySelectorAll('.prose pre code').forEach(el=>hljs.highlightElement(el));},60);
+}
+
+function updateLastBubble(){
+  const i=messages.length-1;const b=document.getElementById('bub-'+i);
+  if(b&&messages[i].role==='assistant'){
+    b.className='bubble bubble-ai prose';b.innerHTML=parseAI(messages[i].content);
+    setTimeout(()=>{renderMermaidAll();document.querySelectorAll('.prose pre code').forEach(el=>hljs.highlightElement(el));},60);
+    scrollBottom();
+  }
+}
+
+function parseAI(c){
+  if(!c)return'<div class="typing-dots"><span></span><span></span><span></span></div>';
+  const s=c.replace(/---FLASHCARDS---[\s\S]*?---END-FLASHCARDS---/g,'').trim();
+  const parts=[];const re=/```(mermaid|ecg)([\s\S]*?)```/g;let last=0,m;
+  while((m=re.exec(s))!==null){
+    if(m.index>last)parts.push({t:'md',c:s.slice(last,m.index)});
+    parts.push({t:m[1],c:m[2].replace(/^\n|\n$/g,'')});
+    last=m.index+m[0].length;
+  }
+  if(last<s.length)parts.push({t:'md',c:s.slice(last)});
+  return parts.map(p=>{
+    if(p.t==='mermaid'){const id='mm-'+(++mmCount)+'-'+Date.now();return`<div class="mermaid-wrap" id="${id}" data-code="${encodeURIComponent(p.c)}"><div style="color:var(--sm-text3);font-size:.72rem;font-family:var(--sm-mono);padding:.4rem">⟳ Rendering diagram…</div></div>`}
+    if(p.t==='ecg')return`<div class="ecg-block">${esc(p.c)}</div>`;
+    return marked.parse(p.c||'');
+  }).join('');
+}
+
+async function renderMermaidAll(){
+  for(const w of document.querySelectorAll('.mermaid-wrap[data-code]:not([data-rendered])')){
+    w.setAttribute('data-rendered','1');
+    try{const id='mmd-'+Math.random().toString(36).slice(2);const{svg}=await mermaid.render(id,decodeURIComponent(w.dataset.code));w.innerHTML=svg;}
+    catch(e){w.innerHTML=`<div class="mermaid-error">${esc(e.message)}</div>`;}
+  }
+}
+
+function scrollBottom(){const el=document.getElementById('msg-scroll');if(el)requestAnimationFrame(()=>el.scrollTop=el.scrollHeight);}
+
+/* ══ FLASHCARDS ════════════════════════════════════════════════════ */
+function renderFlashcards(){
+  const empty=document.getElementById('fc-empty');
+  const cont=document.getElementById('fc-content');
+  const grid=document.getElementById('fc-grid');
+  if(!flashcards.length){empty.style.display='block';cont.style.display='none';return;}
+  empty.style.display='none';cont.style.display='block';
+  document.getElementById('fc-count-lbl').textContent=flashcards.length+' flashcards';
+  grid.innerHTML='';
+  flashcards.forEach(fc=>{
+    const sc='sp-'+fc.specialty.replace(/ /g,'_');
+    const row=document.createElement('div');row.className='d-flex gap-2 align-items-stretch';
+    row.innerHTML=`
+      <div class="fc-flip flex-grow-1" id="fc-${fc.id}" onclick="flipFC('${fc.id}')">
+        <div class="fc-inner">
+          <div class="fc-face fc-front">
+            <span class="badge rounded-pill ${sc} mb-1" style="font-size:.52rem;display:inline-block">${fc.specialty}</span>
+            <div class="fc-lbl">QUESTION</div><div class="fc-txt">${esc(fc.front)}</div>
+          </div>
+          <div class="fc-face fc-back">
+            <div class="fc-lbl">MECHANISM</div><div class="fc-txt">${esc(fc.back)}</div>
+          </div>
+        </div>
+      </div>
+      <button onclick="deleteFC('${fc.id}')" class="btn btn-sm align-self-center" style="background:none;border:1px solid var(--sm-border);border-radius:8px;color:var(--sm-text3);padding:4px 8px;flex-shrink:0" title="Delete">
+        <i class="bi bi-trash"></i>
+      </button>`;
+    grid.appendChild(row);
+  });
+}
+
+function flipFC(id){document.getElementById('fc-'+id)?.classList.toggle('flipped');}
+async function deleteFC(id){
+  try{await safeFetch(`${API}/flashcards/${id}`,{method:'DELETE'});}catch(e){}
+  flashcards=flashcards.filter(c=>c.id!==id);renderFlashcards();updateTabLabels();loadTopics();
+}
+
+function openStudy(){studyCards=[...flashcards];studyIdx=0;studyFlipped=false;if(!studyCards.length)return;renderStudyCard();studyModal.show();}
+function renderStudyCard(){
+  const c=studyCards[studyIdx];
+  document.getElementById('study-q').textContent=c.front;
+  document.getElementById('study-a').textContent=c.back;
+  document.getElementById('study-counter').textContent=(studyIdx+1)+' / '+studyCards.length;
+  document.getElementById('study-prog').style.width=((studyIdx+1)/studyCards.length*100)+'%';
+  document.getElementById('study-card').classList.remove('flipped');studyFlipped=false;
+  document.getElementById('study-prev').disabled=studyIdx===0;
+  document.getElementById('study-next').disabled=studyIdx===studyCards.length-1;
+}
+function flipStudy(){studyFlipped=!studyFlipped;document.getElementById('study-card').classList.toggle('flipped',studyFlipped);}
+function studyNav(d){studyIdx=Math.max(0,Math.min(studyCards.length-1,studyIdx+d));renderStudyCard();}
+
+/* ══ CONCEPTS ══════════════════════════════════════════════════════ */
+function renderConcepts(){
+  const empty=document.getElementById('con-empty');
+  const list=document.getElementById('con-list');
+  if(!concepts.length){empty.style.display='block';list.innerHTML='';return;}
+  empty.style.display='none';list.innerHTML='';
+  concepts.forEach(c=>{
+    const sc='sp-'+c.specialty.replace(/ /g,'_');
+    const card=document.createElement('div');card.className='con-card';
+    card.innerHTML=`
+      <div class="flex-grow-1">
+        <span class="badge rounded-pill ${sc} mb-1" style="font-size:.52rem;display:inline-block">${c.specialty}</span>
+        <div style="font-size:.82rem;line-height:1.6;color:var(--sm-text1)">${esc(c.content)}</div>
+      </div>
+      <button onclick="deleteCon('${c.id}')" class="btn btn-sm p-0 flex-shrink-0 mt-1" style="color:var(--sm-text3);font-size:.7rem"><i class="bi bi-trash"></i></button>`;
+    list.appendChild(card);
+  });
+}
+
+async function deleteCon(id){
+  try{await safeFetch(`${API}/concepts/${id}`,{method:'DELETE'});}catch(e){}
+  concepts=concepts.filter(c=>c.id!==id);renderConcepts();updateTabLabels();
+}
+
+/* ══ HIGHLIGHT ══════════════════════════════════════════════════════ */
+function setupHighlight(){
+  document.addEventListener('mouseup',e=>{
+    const sel=window.getSelection();const txt=sel?.toString().trim();
+    if(!txt||txt.length<5){closeHlMenu();return;}
+    let el=sel.anchorNode?.nodeType===3?sel.anchorNode.parentElement:sel.anchorNode;
+    let inAI=false;
+    while(el){if(el.classList?.contains('bubble-ai')){inAI=true;break;}el=el.parentElement;}
+    if(!inAI){closeHlMenu();return;}
+    hlText=txt;hlTopicId=activeId;
+    document.getElementById('hl-prev').textContent=txt.slice(0,100)+(txt.length>100?'…':'');
+    const menu=document.getElementById('hl-menu');
+    menu.style.left=Math.min(e.clientX,innerWidth-195)+'px';
+    menu.style.top=(e.clientY-15)+'px';
+    menu.classList.add('show');
+  });
+}
+
+function closeHlMenu(){document.getElementById('hl-menu').classList.remove('show');}
+
+async function hlAction(type){
+  closeHlMenu();if(!hlText||!hlTopicId)return;
+  const sp=activeTopic?.specialty||'General';
+  try{
+    if(type==='fc'){
+      const fc=await safeFetch(`${API}/flashcards`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic_id:hlTopicId,specialty:sp,front:hlText,back:'[Review — saved from session]',source:'highlight'})});
+      flashcards.unshift(fc);renderFlashcards();updateTabLabels();showToast('🃏 Added to flashcards!','teal');
+    }else{
+      const c=await safeFetch(`${API}/concepts`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic_id:hlTopicId,specialty:sp,content:hlText,type:'highlight'})});
+      concepts.unshift(c);renderConcepts();updateTabLabels();showToast('📌 Saved as key concept!','purple');
+    }
+    loadTopics();
+  }catch(e){showToast('⚠ '+e.message,'danger');}
+  hlText='';
+}
+
+/* ══ TOAST ══════════════════════════════════════════════════════════ */
+function showToast(msg,color='teal'){
+  const cols={teal:'rgba(20,184,166,.18)',purple:'rgba(167,139,250,.18)',danger:'rgba(244,63,94,.18)',amber:'rgba(245,158,11,.18)'};
+  const t=document.getElementById('app-toast');
+  t.style.background=cols[color]||cols.teal;
+  document.getElementById('toast-msg').textContent=msg;
+  toastInst.show();
+}
+
+/* ══ HELPERS ════════════════════════════════════════════════════════ */
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* ══ BOOT ════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
