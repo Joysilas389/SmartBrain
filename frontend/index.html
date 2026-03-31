@@ -898,7 +898,7 @@ body {
           </div>
           <div id="exam-options" class="mb-3"></div>
           <div id="exam-explanation" style="display:none;background:rgba(20,184,166,0.06);border:1px solid rgba(20,184,166,0.2);border-radius:12px;padding:1rem;font-size:.86rem;line-height:1.7;color:var(--sm-text1)"></div>
-          <div class="d-flex gap-2 mt-3" id="exam-controls" style="display:none!important">
+          <div class="d-flex gap-2 mt-3" id="exam-controls" style="display:none">
             <button class="btn btn-sm flex-grow-1" style="background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.25);color:var(--sm-teal);border-radius:10px;font-weight:700" onclick="generateExam()">
               <i class="bi bi-arrow-repeat me-1"></i>Next Question
             </button>
@@ -1015,6 +1015,90 @@ body {
     <div class="d-flex">
       <div class="toast-body" id="toast-msg"></div>
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ FAB BUTTON ════════ -->
+<button class="fab" id="fab-btn" onclick="openQuickCapture()" title="Quick capture">
+  <i class="bi bi-lightning-charge-fill"></i>
+</button>
+
+<!-- ════════ DUE BANNER ════════ -->
+<div id="due-banner" style="display:none;position:fixed;top:52px;left:0;right:0;z-index:200;padding:6px 14px;background:linear-gradient(135deg,rgba(244,63,94,0.15),rgba(245,158,11,0.1));border-bottom:1px solid rgba(244,63,94,0.25);align-items:center;gap:8px">
+  <span class="due-badge"><i class="bi bi-alarm me-1"></i><span id="due-count">0</span> cards due</span>
+  <span style="font-size:.76rem;color:var(--sm-text2)">Spaced repetition review ready</span>
+  <button class="btn btn-sm ms-auto" style="background:rgba(244,63,94,.15);border:1px solid rgba(244,63,94,.3);color:var(--sm-danger);border-radius:8px;font-size:.72rem;font-weight:700" onclick="openSpacedRepReview()">
+    Review Now
+  </button>
+</div>
+
+<!-- ════════ QUICK CAPTURE MODAL ════════ -->
+<div class="modal fade" id="quickCaptureModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:380px">
+    <div class="modal-content">
+      <div class="modal-header py-2 px-3">
+        <h6 class="modal-title mb-0" style="font-family:var(--sm-serif);font-style:italic">
+          <i class="bi bi-lightning-charge-fill me-2" style="color:var(--sm-teal)"></i>Quick Capture
+        </h6>
+        <button class="btn p-0 ms-auto" data-bs-dismiss="modal" style="color:var(--sm-text3)"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body p-3">
+        <div style="font-size:.78rem;color:var(--sm-text3);margin-bottom:.6rem">Capture a thought, clinical observation, or topic to learn</div>
+        <textarea id="qc-input" class="form-control" rows="4"
+          placeholder="e.g. Patient with Kussmaul breathing — remind me why this happens in DKA…"
+          style="background:rgba(20,184,166,.04);border-color:var(--sm-border);color:var(--sm-text1);font-size:.85rem;resize:none"></textarea>
+      </div>
+      <div class="modal-footer py-2 px-3 gap-2">
+        <button class="modal-btn modal-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+        <button class="modal-btn modal-btn-teal fw-bold" onclick="saveQuickCapture()">
+          <i class="bi bi-check-lg me-1"></i>Save &amp; Learn
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ GLOBAL SEARCH MODAL ════════ -->
+<div class="modal fade" id="searchModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:520px">
+    <div class="modal-content">
+      <div class="modal-header py-2 px-3" style="border-bottom:1px solid var(--sm-border)">
+        <div class="d-flex align-items-center gap-2 flex-grow-1">
+          <i class="bi bi-search" style="color:var(--sm-teal);flex-shrink:0"></i>
+          <input type="text" id="global-search-input"
+            placeholder="Search sessions, flashcards, pearls…"
+            style="background:transparent;border:none;outline:none;color:var(--sm-text1);font-size:.9rem;width:100%;font-family:var(--sm-sans)"
+            oninput="runGlobalSearch(this.value)"/>
+        </div>
+        <button class="btn p-0 ms-2" data-bs-dismiss="modal" style="color:var(--sm-text3)"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body p-0" style="max-height:420px;overflow-y:auto">
+        <div id="search-results" style="padding:.5rem"></div>
+        <div id="search-empty" class="text-center py-4" style="display:none">
+          <div style="font-size:.82rem;color:var(--sm-text3)">No results found</div>
+        </div>
+        <div id="search-prompt" class="text-center py-4">
+          <div style="font-size:.82rem;color:var(--sm-text3)">Type to search all your learning sessions</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MASTERY DASHBOARD MODAL ════════ -->
+<div class="modal fade" id="masteryModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:480px">
+    <div class="modal-content">
+      <div class="modal-header py-2 px-3">
+        <h6 class="modal-title mb-0" style="font-family:var(--sm-serif);font-style:italic">
+          <i class="bi bi-graph-up-arrow me-2" style="color:var(--sm-teal)"></i>Mastery Dashboard
+        </h6>
+        <button class="btn p-0 ms-auto" data-bs-dismiss="modal" style="color:var(--sm-text3)"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body p-3" id="mastery-body" style="max-height:480px;overflow-y:auto">
+        <div class="text-center py-3" style="color:var(--sm-text3);font-size:.82rem">Loading mastery data…</div>
+      </div>
     </div>
   </div>
 </div>
@@ -1737,510 +1821,337 @@ function showToast(msg,color='teal'){
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 
-/* ══ FEATURE: LAYER STEPPER ════════════════════════════════════════ */
-let currentLayer = 0;
-
-function updateLayerStepper(layer) {
-  currentLayer = Math.min(5, Math.max(0, layer));
-  for (let i = 0; i <= 5; i++) {
-    const dot  = document.getElementById('ld-'+i);
-    const line = document.getElementById('ll-'+i);
+/* ══ FEATURE: LAYER STEPPER ════════════════════════════ */
+var currentLayer = 0;
+var LAYER_PROMPTS = [
+  'Start from Layer 0 — what is the core problem this system is solving?',
+  'Go to Layer 1 — give me the simplest 3-element picture with zero jargon',
+  'Layer 2 — walk me through the full causal chain step by step',
+  'Layer 3 — how does this connect across cell, tissue, organ, and system?',
+  'Layer 4 — walk me into the ward. What do I see, investigate, and treat?',
+  'Layer 5 — what are the edge cases, exceptions, and contrast conditions?'
+];
+function updateLayerStepper(n) {
+  currentLayer = Math.min(5, Math.max(0, n));
+  for (var i = 0; i <= 5; i++) {
+    var dot  = document.getElementById('ld-' + i);
+    var line = document.getElementById('ll-' + i);
     if (!dot) continue;
     dot.className = 'layer-dot' + (i === currentLayer ? ' active' : i < currentLayer ? ' done' : '');
     if (line) line.className = 'layer-line' + (i < currentLayer ? ' done' : '');
   }
 }
-
-function jumpToLayer(layer) {
-  const prompts = [
-    'Start again from Layer 0 — what is the core problem this system is solving?',
-    'Go back to Layer 1 — give me the simplest 3-element picture with zero jargon',
-    'Drill deeper into Layer 2 — walk me through the full causal chain step by step',
-    'Move to Layer 3 — how does this connect across cell, tissue, organ, and system level?',
-    'Take me to Layer 4 — walk me into the ward. What do I see, hear, investigate, and treat?',
-    'Push to Layer 5 — what are the edge cases, exceptions, and contrast conditions?',
-  ];
-  injectPrompt(prompts[layer]);
-  updateLayerStepper(layer);
-}
-
-// Detect layer from AI response text
+function jumpToLayer(n) { injectPrompt(LAYER_PROMPTS[n]); updateLayerStepper(n); }
 function detectLayerFromText(text) {
   if (!text) return;
-  const lower = text.toLowerCase();
-  if (lower.includes('layer 5') || lower.includes('edge case') || lower.includes('contrast')) updateLayerStepper(5);
-  else if (lower.includes('layer 4') || lower.includes('clinical') || lower.includes('walk into')) updateLayerStepper(4);
-  else if (lower.includes('layer 3') || lower.includes('integration') || lower.includes('organ level')) updateLayerStepper(3);
-  else if (lower.includes('layer 2') || lower.includes('mechanism') || lower.includes('causal chain') || lower.includes('because →')) updateLayerStepper(2);
-  else if (lower.includes('layer 1') || lower.includes('simplest picture') || lower.includes('three elements')) updateLayerStepper(1);
-  else if (lower.includes('layer 0') || lower.includes('the problem') || lower.includes('what problem')) updateLayerStepper(0);
+  var t = text.toLowerCase();
+  if      (t.indexOf('layer 5') > -1 || t.indexOf('edge case') > -1)      updateLayerStepper(5);
+  else if (t.indexOf('layer 4') > -1 || t.indexOf('walk into') > -1)       updateLayerStepper(4);
+  else if (t.indexOf('layer 3') > -1 || t.indexOf('integration') > -1)     updateLayerStepper(3);
+  else if (t.indexOf('layer 2') > -1 || t.indexOf('causal chain') > -1)    updateLayerStepper(2);
+  else if (t.indexOf('layer 1') > -1 || t.indexOf('simplest picture') > -1)updateLayerStepper(1);
+  else if (t.indexOf('layer 0') > -1 || t.indexOf('the problem') > -1)     updateLayerStepper(0);
 }
 
-/* ══ FEATURE: CLINICAL PEARL EXTRACTOR ════════════════════════════ */
-let pearls = [];
-
+/* ══ FEATURE: CLINICAL PEARL COLLECTOR ═════════════════ */
+var pearls = [];
 function extractAndSavePearls(text, topicId, specialty) {
   if (!text) return;
-  // Match ★ PEARL: ... patterns
-  const pearlRegex = /★\s*(?:PEARL[:\s]+)?(.+?)(?=
-★|
-##|
----|
-📋|$)/gs;
-  let m;
-  while ((m = pearlRegex.exec(text)) !== null) {
-    const content = m[1].trim().replace(/\*\*/g, '').slice(0, 300);
-    if (content.length > 20) {
-      pearls.push({ id: Date.now()+Math.random(), content, specialty, topicId, created_at: new Date().toISOString() });
+  var parts = text.split('\n');
+  for (var i = 0; i < parts.length; i++) {
+    var line = parts[i];
+    if (line.indexOf('\u2605') > -1) {
+      var content = line.replace(/\u2605\s*(PEARL[:\s]+)?/i, '').trim().replace(/\*\*/g,'');
+      if (content.length > 20 && content.length < 400) {
+        pearls.push({ id: Date.now() + Math.random(), content: content, specialty: specialty || 'General', topicId: topicId });
+      }
     }
   }
   renderPearls();
 }
-
 function renderPearls() {
-  const empty = document.getElementById('pearl-empty');
-  const list  = document.getElementById('pearl-list');
+  var empty = document.getElementById('pearl-empty');
+  var list  = document.getElementById('pearl-list');
   if (!empty || !list) return;
-  if (pearls.length === 0) { empty.style.display='block'; list.innerHTML=''; return; }
+  if (pearls.length === 0) { empty.style.display = 'block'; list.innerHTML = ''; return; }
   empty.style.display = 'none';
-  list.innerHTML = '';
-  const grouped = {};
-  pearls.forEach(p => { if (!grouped[p.specialty]) grouped[p.specialty]=[]; grouped[p.specialty].push(p); });
-  for (const [spec, ps] of Object.entries(grouped)) {
-    const sc = 'sp-'+spec.replace(/ /g,'_');
-    const hdr = document.createElement('div');
-    hdr.style.cssText = 'font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--sm-text3);padding:8px 0 4px';
-    hdr.innerHTML = `<span class="badge rounded-pill ${sc}" style="font-size:.6rem">${spec}</span> <span style="margin-left:4px">${ps.length} pearl${ps.length>1?'s':''}</span>`;
-    list.appendChild(hdr);
-    ps.forEach(p => {
-      const card = document.createElement('div');
-      card.className = 'pearl-card';
-      card.innerHTML = `<span class="pearl-star">★</span><span style="font-size:.84rem;color:var(--sm-text1);line-height:1.6">${esc(p.content)}</span>`;
-      list.appendChild(card);
+  var grouped = {};
+  pearls.forEach(function(p) { if (!grouped[p.specialty]) grouped[p.specialty] = []; grouped[p.specialty].push(p); });
+  var html2 = '';
+  for (var spec in grouped) {
+    var sc = 'sp-' + spec.replace(/ /g, '_');
+    html2 += '<div style="font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--sm-text3);padding:8px 0 4px">';
+    html2 += '<span class="badge rounded-pill ' + sc + '" style="font-size:.6rem">' + esc(spec) + '</span> ';
+    html2 += '<span style="margin-left:4px">' + grouped[spec].length + ' pearl' + (grouped[spec].length > 1 ? 's' : '') + '</span></div>';
+    grouped[spec].forEach(function(p) {
+      html2 += '<div class="pearl-card"><span class="pearl-star">\u2605</span><span style="font-size:.84rem;color:var(--sm-text1);line-height:1.6">' + esc(p.content) + '</span></div>';
     });
   }
+  list.innerHTML = html2;
 }
 
-/* ══ FEATURE: SPACED REPETITION (SM-2 simplified) ═════════════════ */
-const FC_REVIEW_KEY = 'sm_fc_review';
-
-function getFcReviewData() {
-  try { return JSON.parse(localStorage.getItem(FC_REVIEW_KEY) || '{}'); } catch { return {}; }
+/* ══ FEATURE: SPACED REPETITION (SM-2) ═════════════════ */
+var FC_KEY = 'sm_fc_sr';
+function getFcSR() { try { return JSON.parse(localStorage.getItem(FC_KEY) || '{}'); } catch(e) { return {}; } }
+function saveFcSR(d) { try { localStorage.setItem(FC_KEY, JSON.stringify(d)); } catch(e) {} }
+function markFcReviewed(id, knew) {
+  var data = getFcSR(), now = Date.now(), prev = data[id] || { interval: 1, reps: 0 };
+  if (knew) { prev.reps++; prev.interval = prev.reps === 1 ? 1 : prev.reps === 2 ? 3 : Math.round(prev.interval * 2.5); }
+  else { prev.reps = 0; prev.interval = 1; }
+  prev.nextDue = now + (prev.interval * 86400000);
+  data[id] = prev; saveFcSR(data); updateDueBanner();
 }
-function saveFcReviewData(data) {
-  try { localStorage.setItem(FC_REVIEW_KEY, JSON.stringify(data)); } catch {}
-}
-
-function markFcReviewed(fcId, knew) {
-  const data = getFcReviewData();
-  const now  = Date.now();
-  const prev = data[fcId] || { interval: 1, reps: 0 };
-  if (knew) {
-    prev.reps++;
-    prev.interval = prev.reps === 1 ? 1 : prev.reps === 2 ? 3 : Math.round(prev.interval * 2.5);
-  } else {
-    prev.reps = 0;
-    prev.interval = 1;
-  }
-  prev.nextDue = now + (prev.interval * 24 * 60 * 60 * 1000);
-  data[fcId] = prev;
-  saveFcReviewData(data);
-  updateDueBanner();
-}
-
 function getDueFlashcards() {
-  const data = getFcReviewData();
-  const now  = Date.now();
-  return flashcards.filter(fc => {
-    const r = data[fc.id];
-    return !r || r.nextDue <= now;
-  });
+  var data = getFcSR(), now = Date.now();
+  return flashcards.filter(function(fc) { var r = data[fc.id]; return !r || r.nextDue <= now; });
 }
-
 function updateDueBanner() {
-  const due    = getDueFlashcards();
-  const banner = document.getElementById('due-banner');
-  const count  = document.getElementById('due-count');
+  var due = getDueFlashcards(), banner = document.getElementById('due-banner'), cnt = document.getElementById('due-count');
   if (!banner) return;
-  if (due.length > 0 && activeId) {
-    banner.style.display = 'flex';
-    if (count) count.textContent = due.length;
-  } else {
-    banner.style.display = 'none';
-  }
+  if (due.length > 0 && activeId) { banner.style.display = 'flex'; if (cnt) cnt.textContent = due.length; }
+  else banner.style.display = 'none';
 }
-
 function openSpacedRepReview() {
-  studyCards = getDueFlashcards();
-  studyIdx = 0; studyFlipped = false;
+  studyCards = getDueFlashcards(); studyIdx = 0; studyFlipped = false;
   if (!studyCards.length) return;
-  renderStudyCard();
-  studyModal.show();
+  renderStudyCard(); studyModal.show();
   document.getElementById('due-banner').style.display = 'none';
 }
 
-// Patch study modal to track reviews
-const _origFlipStudy = typeof flipStudy === 'function' ? flipStudy : null;
-
-/* ══ FEATURE: MASTERY DASHBOARD ════════════════════════════════════ */
+/* ══ FEATURE: MASTERY DASHBOARD ════════════════════════ */
 function renderMastery() {
-  const body = document.getElementById('mastery-body');
+  var body = document.getElementById('mastery-body');
   if (!body) return;
-
-  // Calculate mastery per specialty from topics, messages, flashcards, concepts
-  const specialties = ['Cardiology','Respiratory','Nephrology','Neurology','Endocrinology','Haematology','Gastroenterology','Pharmacology','Infectious Disease','Surgery','Obstetrics','Paediatrics','Psychiatry','Anatomy','Physiology','Biochemistry','Pathology','Microbiology'];
-  
-  const fcBySpec    = {};
-  const topicBySpec = {};
-  flashcards.forEach(f => { fcBySpec[f.specialty] = (fcBySpec[f.specialty]||0)+1; });
-  topics.forEach(t => { topicBySpec[t.specialty] = (topicBySpec[t.specialty]||0)+1; });
-
-  const activeSpecs = [...new Set([
-    ...Object.keys(fcBySpec),
-    ...Object.keys(topicBySpec)
-  ])].filter(s => s && s !== 'General');
-
-  if (activeSpecs.length === 0) {
-    body.innerHTML = `<div class="text-center py-4" style="color:var(--sm-text3);font-size:.82rem">
-      Start learning sessions to see your mastery progress here.
-    </div>`;
-    return;
-  }
-
-  const colors = ['#14b8a6','#3b82f6','#a78bfa','#f59e0b','#f43f5e','#06d6a0','#ff9800','#e879f9'];
-  
-  body.innerHTML = `
-    <div style="font-size:.65rem;color:var(--sm-text3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:1rem">Your Learning Map</div>
-    ${activeSpecs.map((spec, i) => {
-      const color   = colors[i % colors.length];
-      const topics_ = topicBySpec[spec] || 0;
-      const cards   = fcBySpec[spec] || 0;
-      // Score: topics*20 + cards*5, capped at 100
-      const score   = Math.min(100, topics_ * 20 + cards * 5);
-      const sc      = 'sp-'+spec.replace(/ /g,'_');
-      return `
-        <div class="mastery-bar-wrap">
-          <div class="mastery-bar-label">
-            <span style="display:flex;align-items:center;gap:6px">
-              <span class="badge rounded-pill ${sc}" style="font-size:.56rem">${spec}</span>
-              <span style="font-size:.7rem;color:var(--sm-text3)">${topics_} session${topics_!==1?'s':''} · ${cards} card${cards!==1?'s':''}</span>
-            </span>
-            <span style="font-size:.75rem;font-weight:700;color:${color}">${score}%</span>
-          </div>
-          <div class="mastery-bar">
-            <div class="mastery-bar-fill" style="width:${score}%;background:linear-gradient(90deg,${color}88,${color})"></div>
-          </div>
-        </div>`;
-    }).join('')}
-    <div style="margin-top:1.25rem;padding:12px 14px;background:rgba(20,184,166,0.06);border:1px solid rgba(20,184,166,0.15);border-radius:12px">
-      <div style="font-size:.65rem;color:var(--sm-text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">USMLE Readiness</div>
-      <div style="font-family:var(--sm-serif);font-style:italic;font-size:1rem;color:var(--sm-text1)">
-        ${topics.length} topics mastered · ${flashcards.length} mechanisms encoded
-      </div>
-      <div style="font-size:.78rem;color:var(--sm-text3);margin-top:.3rem">
-        Strong in: ${activeSpecs.slice(0,3).join(', ')}
-      </div>
-    </div>`;
+  var fcBySpec = {}, topicBySpec = {};
+  flashcards.forEach(function(f) { fcBySpec[f.specialty] = (fcBySpec[f.specialty] || 0) + 1; });
+  topics.forEach(function(t) { topicBySpec[t.specialty] = (topicBySpec[t.specialty] || 0) + 1; });
+  var specs = [];
+  Object.keys(fcBySpec).concat(Object.keys(topicBySpec)).forEach(function(s) {
+    if (s && s !== 'General' && specs.indexOf(s) === -1) specs.push(s);
+  });
+  if (specs.length === 0) { body.innerHTML = '<div class="text-center py-4" style="color:var(--sm-text3);font-size:.82rem">Start learning sessions to see mastery progress here.</div>'; return; }
+  var colors = ['#14b8a6','#3b82f6','#a78bfa','#f59e0b','#f43f5e','#06d6a0','#ff9800','#e879f9'];
+  var html3 = '<div style="font-size:.65rem;color:var(--sm-text3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:1rem">Your Learning Map</div>';
+  specs.forEach(function(spec, i) {
+    var color = colors[i % colors.length];
+    var t_ = topicBySpec[spec] || 0, c_ = fcBySpec[spec] || 0;
+    var score = Math.min(100, t_ * 20 + c_ * 5);
+    var sc = 'sp-' + spec.replace(/ /g, '_');
+    html3 += '<div class="mastery-bar-wrap">';
+    html3 += '<div class="mastery-bar-label">';
+    html3 += '<span style="display:flex;align-items:center;gap:6px"><span class="badge rounded-pill ' + sc + '" style="font-size:.56rem">' + esc(spec) + '</span>';
+    html3 += '<span style="font-size:.7rem;color:var(--sm-text3)">' + t_ + ' session' + (t_ !== 1 ? 's' : '') + ' \xb7 ' + c_ + ' card' + (c_ !== 1 ? 's' : '') + '</span></span>';
+    html3 += '<span style="font-size:.75rem;font-weight:700;color:' + color + '">' + score + '%</span></div>';
+    html3 += '<div class="mastery-bar"><div class="mastery-bar-fill" style="width:' + score + '%;background:linear-gradient(90deg,' + color + '88,' + color + ')"></div></div></div>';
+  });
+  html3 += '<div style="margin-top:1.25rem;padding:12px 14px;background:rgba(20,184,166,0.06);border:1px solid rgba(20,184,166,0.15);border-radius:12px">';
+  html3 += '<div style="font-size:.65rem;color:var(--sm-text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">USMLE Readiness</div>';
+  html3 += '<div style="font-family:var(--sm-serif);font-style:italic;font-size:1rem;color:var(--sm-text1)">' + topics.length + ' topics mastered \xb7 ' + flashcards.length + ' mechanisms encoded</div>';
+  if (specs.length > 0) html3 += '<div style="font-size:.78rem;color:var(--sm-text3);margin-top:.3rem">Strong in: ' + specs.slice(0,3).join(', ') + '</div>';
+  html3 += '</div>';
+  body.innerHTML = html3;
 }
 
-/* ══ FEATURE: QUICK CAPTURE ════════════════════════════════════════ */
-let quickCaptureModal;
-
+/* ══ FEATURE: QUICK CAPTURE ════════════════════════════ */
+var quickCaptureModal;
 function openQuickCapture() {
   if (!quickCaptureModal) quickCaptureModal = new bootstrap.Modal(document.getElementById('quickCaptureModal'));
   document.getElementById('qc-input').value = '';
   quickCaptureModal.show();
-  setTimeout(() => document.getElementById('qc-input').focus(), 400);
+  setTimeout(function() { document.getElementById('qc-input').focus(); }, 400);
 }
-
-async function saveQuickCapture() {
-  const text = document.getElementById('qc-input').value.trim();
+function saveQuickCapture() {
+  var text = document.getElementById('qc-input').value.trim();
   if (!text) return;
-  // Classify and save as concept, then start a new session with it
-  const specialty = classifyText(text);
   if (quickCaptureModal) quickCaptureModal.hide();
-  showToast('📝 Captured — starting learning session…', 'teal');
-  await newSession('I want to understand this from first principles: ' + text);
+  showToast('\ud83d\udcdd Captured \u2014 starting session\u2026', 'teal');
+  newSession('I want to understand this from first principles: ' + text);
 }
-
-// Client-side classifier (backup when no activeId)
 function classifyText(text) {
-  const lower = text.toLowerCase();
-  const map = {
-    'Cardiology': ['heart','cardiac','coronary','ecg','angina','infarct'],
-    'Endocrinology': ['diabetes','insulin','glucose','thyroid','dka','cortisol'],
-    'Respiratory': ['lung','respiratory','asthma','copd','pneumonia','oxygen'],
-    'Nephrology': ['kidney','renal','creatinine','gfr','dialysis'],
-    'Neurology': ['brain','stroke','seizure','neuro','nerve'],
-    'Pharmacology': ['drug','receptor','mechanism','inhibitor','agonist'],
-  };
-  for (const [spec, kws] of Object.entries(map)) {
-    if (kws.some(k => lower.includes(k))) return spec;
-  }
+  var lower = text.toLowerCase();
+  var map = { 'Cardiology':['heart','cardiac','ecg','angina','infarct'], 'Endocrinology':['diabetes','insulin','dka','thyroid'], 'Respiratory':['lung','asthma','copd','pneumonia'], 'Nephrology':['kidney','renal','creatinine'], 'Neurology':['brain','stroke','seizure','neuro'], 'Pharmacology':['drug','receptor','inhibitor'] };
+  for (var spec in map) { if (map[spec].some(function(k) { return lower.indexOf(k) > -1; })) return spec; }
   return 'General';
 }
 
-/* ══ FEATURE: GLOBAL SEARCH ════════════════════════════════════════ */
-let searchModal;
+/* ══ FEATURE: GLOBAL SEARCH ════════════════════════════ */
+var globalSearchModal;
 function openSearch() {
-  if (!searchModal) searchModal = new bootstrap.Modal(document.getElementById('searchModal'));
-  searchModal.show();
-  setTimeout(() => document.getElementById('global-search-input').focus(), 400);
+  if (!globalSearchModal) globalSearchModal = new bootstrap.Modal(document.getElementById('searchModal'));
+  globalSearchModal.show();
+  setTimeout(function() { document.getElementById('global-search-input').focus(); }, 400);
 }
-
 function runGlobalSearch(query) {
-  const results = document.getElementById('search-results');
-  const empty   = document.getElementById('search-empty');
-  const prompt  = document.getElementById('search-prompt');
-  if (!query || query.length < 2) {
-    results.innerHTML = '';
-    empty.style.display   = 'none';
-    prompt.style.display  = 'block';
-    return;
-  }
-  prompt.style.display = 'none';
-  const q = query.toLowerCase();
-  // Search across all topics and their titles/specialties + flashcards
-  const matches = [];
-  topics.forEach(t => {
-    if (t.title.toLowerCase().includes(q) || t.specialty.toLowerCase().includes(q)) {
-      matches.push({ type: 'topic', topic: t, text: t.title, specialty: t.specialty });
-    }
+  var results = document.getElementById('search-results');
+  var empty   = document.getElementById('search-empty');
+  var prompt  = document.getElementById('search-prompt');
+  if (!results) return;
+  if (!query || query.length < 2) { results.innerHTML = ''; if(empty) empty.style.display = 'none'; if(prompt) prompt.style.display = 'block'; return; }
+  if(prompt) prompt.style.display = 'none';
+  var q = query.toLowerCase(), matches = [];
+  topics.forEach(function(t) { if (t.title.toLowerCase().indexOf(q) > -1 || t.specialty.toLowerCase().indexOf(q) > -1) matches.push({ type:'topic', id:t.id, text:t.title, specialty:t.specialty }); });
+  flashcards.forEach(function(fc) { if (fc.front.toLowerCase().indexOf(q) > -1 || fc.back.toLowerCase().indexOf(q) > -1) matches.push({ type:'flashcard', id:fc.id, text:fc.front, specialty:fc.specialty }); });
+  pearls.forEach(function(p) { if (p.content.toLowerCase().indexOf(q) > -1) matches.push({ type:'pearl', id:p.id, text:p.content, specialty:p.specialty }); });
+  if (matches.length === 0) { results.innerHTML = ''; if(empty) empty.style.display = 'block'; return; }
+  if(empty) empty.style.display = 'none';
+  var re_ = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+  var html4 = '';
+  matches.slice(0, 12).forEach(function(m) {
+    var sc   = 'sp-' + (m.specialty || 'General').replace(/ /g, '_');
+    var icon = m.type === 'topic' ? 'bi-chat-text' : m.type === 'flashcard' ? 'bi-collection' : 'bi-star';
+    var hi   = esc(m.text).replace(re_, '<span class="search-highlight">$1</span>');
+    html4 += '<div class="search-result" onclick="handleSearchClick(\'' + m.type + '\',\'' + m.id + '\')">';
+    html4 += '<div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">';
+    html4 += '<i class="bi ' + icon + '" style="color:var(--sm-teal);font-size:.8rem"></i>';
+    html4 += '<span class="badge rounded-pill ' + sc + '" style="font-size:.54rem">' + esc(m.specialty || 'General') + '</span>';
+    html4 += '<span style="font-size:.62rem;color:var(--sm-text3);text-transform:uppercase;letter-spacing:.08em">' + m.type + '</span></div>';
+    html4 += '<div style="font-size:.82rem;color:var(--sm-text1);line-height:1.5">' + hi + '</div></div>';
   });
-  flashcards.forEach(fc => {
-    if (fc.front.toLowerCase().includes(q) || fc.back.toLowerCase().includes(q)) {
-      matches.push({ type: 'flashcard', fc, text: fc.front, specialty: fc.specialty });
-    }
-  });
-  pearls.forEach(p => {
-    if (p.content.toLowerCase().includes(q)) {
-      matches.push({ type: 'pearl', pearl: p, text: p.content, specialty: p.specialty });
-    }
-  });
-
-  if (matches.length === 0) { results.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display = 'none';
-  results.innerHTML = matches.slice(0,12).map(m => {
-    const sc = 'sp-'+(m.specialty||'General').replace(/ /g,'_');
-    const icon = m.type==='topic' ? 'bi-chat-text' : m.type==='flashcard' ? 'bi-collection' : 'bi-star';
-    const highlighted = esc(m.text).replace(new RegExp(esc(query),'gi'), s => `<span class="search-highlight">${s}</span>`);
-    return `<div class="search-result" onclick="handleSearchClick('${m.type}','${m.type==='topic'?m.topic.id:m.type==='flashcard'?m.fc.id:m.pearl.id}')">
-      <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
-        <i class="bi ${icon}" style="color:var(--sm-teal);font-size:.8rem"></i>
-        <span class="badge rounded-pill ${sc}" style="font-size:.54rem">${m.specialty}</span>
-        <span style="font-size:.62rem;color:var(--sm-text3);text-transform:uppercase;letter-spacing:.08em">${m.type}</span>
-      </div>
-      <div style="font-size:.82rem;color:var(--sm-text1);line-height:1.5">${highlighted}</div>
-    </div>`;
-  }).join('');
+  results.innerHTML = html4;
 }
-
 function handleSearchClick(type, id) {
-  const modal = bootstrap.Modal.getInstance(document.getElementById('searchModal'));
-  if (modal) modal.hide();
-  if (type === 'topic') {
-    selectTopic(id);
-  } else if (type === 'flashcard') {
-    switchTab('fc');
-  } else {
-    switchTab('pearl');
-  }
+  var m = bootstrap.Modal.getInstance(document.getElementById('searchModal'));
+  if (m) m.hide();
+  if (type === 'topic') selectTopic(id);
+  else if (type === 'flashcard') switchTab('fc');
+  else switchTab('pearl');
 }
 
-/* ══ FEATURE: USMLE EXAM MODE ══════════════════════════════════════ */
-let examScore = { correct: 0, total: 0 };
-let examAnswered = false;
-
+/* ══ FEATURE: USMLE EXAM MODE ══════════════════════════ */
+var examScore = { correct: 0, total: 0 };
+var examAnswered = false;
 async function generateExam() {
   if (!activeId || !activeTopic) { showToast('Start a learning session first', 'amber'); return; }
   document.getElementById('exam-idle').style.display     = 'none';
   document.getElementById('exam-question').style.display = 'none';
   document.getElementById('exam-loading').style.display  = 'block';
-
-  const prompt = `Generate a USMLE Step 1/2 style clinical vignette question about ${activeTopic.title || 'this topic'} (${activeTopic.specialty}). 
-
-Format your response EXACTLY like this:
-VIGNETTE: [2-4 sentence clinical scenario with patient details, symptoms, exam findings, labs]
-STEM: [The actual question — "What is the most likely mechanism?" or "Which finding best explains?" etc]
-A: [Option A]
-B: [Option B]
-C: [Option C]
-D: [Option D]
-CORRECT: [A, B, C, or D]
-EXPLANATION: [Full mechanism explanation of why the correct answer is right and why the others are wrong — use the Agbesi method, trace to first principles]`;
-
+  var prompt = 'Generate a USMLE Step 1/2 style clinical vignette question about ' + (activeTopic.title || 'this topic') + ' (' + (activeTopic.specialty || 'General') + ').\n\nFormat EXACTLY:\nVIGNETTE: [2-4 sentence clinical scenario]\nSTEM: [The question]\nA: [Option A]\nB: [Option B]\nC: [Option C]\nD: [Option D]\nCORRECT: [A, B, C, or D]\nEXPLANATION: [Full mechanism explanation from first principles]';
   try {
-    const res = await fetch(`${API}/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], topic_id: null })
-    });
-    const reader = res.body.getReader();
-    const dec    = new TextDecoder();
-    let buf = '', full = '';
+    var res = await fetch(API + '/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages:[{role:'user',content:prompt}], topic_id:null }) });
+    var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', full = '';
     while (true) {
-      const { done, value } = await reader.read(); if (done) break;
-      buf += dec.decode(value, { stream: true });
-      const lines = buf.split('
-'); buf = lines.pop() || '';
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        try { const d = JSON.parse(line.slice(6)); if (d.type==='delta') full += d.text; } catch {}
+      var rv = await reader.read(); if (rv.done) break;
+      buf += dec.decode(rv.value, {stream:true});
+      var lines = buf.split('\n'); buf = lines.pop() || '';
+      for (var i = 0; i < lines.length; i++) {
+        if (!lines[i].startsWith('data: ')) continue;
+        try { var d = JSON.parse(lines[i].slice(6)); if (d.type === 'delta') full += d.text; } catch(e) {}
       }
     }
     renderExamQuestion(full);
   } catch(e) {
-    showToast('⚠ Could not generate question: ' + e.message, 'danger');
+    showToast('Could not generate question: ' + e.message, 'danger');
     document.getElementById('exam-loading').style.display = 'none';
     document.getElementById('exam-idle').style.display    = 'block';
   }
 }
-
 function renderExamQuestion(text) {
   document.getElementById('exam-loading').style.display = 'none';
-  const get = (key) => {
-    const m = text.match(new RegExp(key + ':\s*(.+?)(?=\n[A-Z]+:|$)', 's'));
-    return m ? m[1].trim() : '';
-  };
-  const vignette    = get('VIGNETTE');
-  const stem        = get('STEM');
-  const options     = ['A','B','C','D'].map(l => ({ letter: l, text: get(l) })).filter(o => o.text);
-  const correctLetter = get('CORRECT').trim().toUpperCase().charAt(0);
-  const explanation = get('EXPLANATION');
-
-  if (!vignette || options.length < 2) {
-    showToast('Could not parse question format — try again', 'amber');
-    document.getElementById('exam-idle').style.display = 'block';
-    return;
+  function getField(key) {
+    var re = new RegExp(key + ':\\s*([\\s\\S]+?)(?=\\n[A-Z]+:|$)');
+    var m = text.match(re); return m ? m[1].trim() : '';
   }
-
+  var vignette = getField('VIGNETTE'), stem = getField('STEM'), explanation = getField('EXPLANATION');
+  var correct  = getField('CORRECT').trim().charAt(0).toUpperCase();
+  var options  = ['A','B','C','D'].map(function(l) { return { letter:l, text:getField(l) }; }).filter(function(o) { return o.text; });
+  if (!vignette || options.length < 2) { showToast('Could not parse question \u2014 try again', 'amber'); document.getElementById('exam-idle').style.display = 'block'; return; }
   examAnswered = false;
-  document.getElementById('exam-vignette').textContent    = vignette;
-  document.getElementById('exam-stem').textContent        = stem;
+  document.getElementById('exam-vignette').textContent = vignette;
+  document.getElementById('exam-stem').textContent     = stem;
   document.getElementById('exam-explanation').style.display = 'none';
-  document.getElementById('exam-controls').style.removeProperty('display');
-  document.getElementById('exam-controls').style.display  = 'none';
-
-  const optWrap = document.getElementById('exam-options');
-  optWrap.innerHTML = options.map(o => `
-    <button class="exam-option" onclick="answerExam('${o.letter}','${correctLetter}',\`${explanation.replace(/`/g,"'")}\`)">
-      <span class="exam-letter">${o.letter}</span>
-      <span>${esc(o.text)}</span>
-    </button>`).join('');
-
+  document.getElementById('exam-controls').style.display    = 'none';
+  // Build options safely using DOM — no nested template literals
+  var optWrap = document.getElementById('exam-options');
+  optWrap.innerHTML = '';
+  options.forEach(function(o) {
+    var btn = document.createElement('button');
+    btn.className = 'exam-option';
+    btn.dataset.letter      = o.letter;
+    btn.dataset.correct     = correct;
+    btn.dataset.explanation = explanation;
+    btn.innerHTML = '<span class="exam-letter">' + esc(o.letter) + '</span><span>' + esc(o.text) + '</span>';
+    btn.onclick = function() { answerExam(o.letter, correct, explanation); };
+    optWrap.appendChild(btn);
+  });
   document.getElementById('exam-question').style.display = 'block';
 }
-
 function answerExam(chosen, correct, explanation) {
   if (examAnswered) return;
-  examAnswered = true;
-  const isCorrect = chosen === correct;
-  examScore.total++;
+  examAnswered = true; examScore.total++;
+  var isCorrect = chosen === correct;
   if (isCorrect) examScore.correct++;
-
-  // Style all options
-  document.querySelectorAll('.exam-option').forEach(btn => {
-    const letter = btn.querySelector('.exam-letter').textContent;
-    if (letter === correct) btn.classList.add('correct');
-    else if (letter === chosen && !isCorrect) btn.classList.add('wrong');
+  document.querySelectorAll('.exam-option').forEach(function(btn) {
+    var l = btn.dataset.letter;
+    if (l === correct) btn.classList.add('correct');
+    else if (l === chosen && !isCorrect) btn.classList.add('wrong');
     btn.disabled = true;
   });
-
-  // Show explanation
-  const expEl = document.getElementById('exam-explanation');
-  expEl.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:.6rem">
-      ${isCorrect
-        ? '<span style="color:#6ee7b7;font-weight:700;font-size:.9rem"><i class="bi bi-check-circle-fill me-1"></i>Correct!</span>'
-        : `<span style="color:#fda4af;font-weight:700;font-size:.9rem"><i class="bi bi-x-circle-fill me-1"></i>Incorrect — Answer is ${correct}</span>`
-      }
-      <span style="margin-left:auto;font-size:.72rem;color:var(--sm-text3)">${examScore.correct}/${examScore.total} correct</span>
-    </div>
-    <div style="font-size:.85rem;line-height:1.7">${esc(explanation)}</div>`;
+  var expEl = document.getElementById('exam-explanation');
+  var pct   = Math.round(examScore.correct / examScore.total * 100);
+  expEl.innerHTML  = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:.6rem">' + (isCorrect ? '<span style="color:#6ee7b7;font-weight:700"><i class="bi bi-check-circle-fill me-1"></i>Correct!</span>' : '<span style="color:#fda4af;font-weight:700"><i class="bi bi-x-circle-fill me-1"></i>Incorrect \u2014 Answer: ' + correct + '</span>') + '<span style="margin-left:auto;font-size:.72rem;color:var(--sm-text3)">' + examScore.correct + '/' + examScore.total + ' (' + pct + '%)</span></div><div style="font-size:.85rem;line-height:1.7">' + esc(explanation) + '</div>';
   expEl.style.display = 'block';
-  document.getElementById('exam-controls').style.removeProperty('display');
   document.getElementById('exam-controls').style.display = 'flex';
-
-  // Update score display
-  const scoreEl = document.getElementById('exam-score-summary');
-  const scoreDisp = document.getElementById('exam-score-display');
-  if (scoreEl && scoreDisp) {
-    scoreEl.style.display = 'block';
-    const pct = Math.round(examScore.correct/examScore.total*100);
-    scoreDisp.textContent = `${examScore.correct}/${examScore.total} (${pct}%)`;
-    scoreDisp.style.color = pct >= 70 ? 'var(--sm-teal)' : pct >= 50 ? 'var(--sm-amber)' : 'var(--sm-danger)';
-  }
+  var ss = document.getElementById('exam-score-summary'), sd = document.getElementById('exam-score-display');
+  if (ss && sd) { ss.style.display = 'block'; sd.textContent = examScore.correct + '/' + examScore.total + ' (' + pct + '%)'; sd.style.color = pct >= 70 ? 'var(--sm-teal)' : pct >= 50 ? 'var(--sm-amber)' : 'var(--sm-danger)'; }
 }
 
-/* ══ PATCH: switchTab — add pearl, exam, search ════════════════════ */
-const _origSwitchTab = switchTab;
+/* ══ PATCH switchTab for new tabs ═══════════════════════ */
+var _baseSwitchTab = switchTab;
 switchTab = function(tab) {
-  _origSwitchTab(tab);
-  // Handle new tabs
-  const pearlPane = document.getElementById('pane-pearl');
-  const examPane  = document.getElementById('pane-exam');
-  if (pearlPane) pearlPane.style.display  = tab==='pearl' ? 'block' : 'none';
-  if (examPane)  examPane.style.display   = tab==='exam'  ? 'block' : 'none';
-  // Desktop tab active states for new tabs
-  ['pearl','exam'].forEach(t => {
-    const btn = document.getElementById('tb-'+t);
-    const bn  = document.getElementById('bn-'+t);
-    if (btn) btn.classList.toggle('active', t===tab);
-    if (bn)  bn.classList.toggle('active', t===tab);
+  _baseSwitchTab(tab);
+  var pp = document.getElementById('pane-pearl'), ep = document.getElementById('pane-exam');
+  if (pp) pp.style.display = (tab === 'pearl') ? 'block' : 'none';
+  if (ep) ep.style.display = (tab === 'exam')  ? 'block' : 'none';
+  ['pearl','exam'].forEach(function(t) {
+    var db = document.getElementById('tb-' + t), bb = document.getElementById('bn-' + t);
+    if (db) db.classList.toggle('active', t === tab);
+    if (bb) bb.classList.toggle('active', t === tab);
   });
-  // Show/hide FAB
-  const fab = document.getElementById('fab-btn');
-  if (fab) fab.style.display = (tab==='chat' && activeId) ? 'flex' : 'none';
-  // Show/hide input zone only in chat
-  const iz = document.getElementById('input-zone');
-  if (iz) iz.style.display = tab==='chat' ? 'block' : 'none';
+  var fab = document.getElementById('fab-btn');
+  if (fab) fab.style.display = (tab === 'chat' && activeId) ? 'flex' : 'none';
+  var iz = document.getElementById('input-zone');
+  if (iz) iz.style.display = tab === 'chat' ? 'block' : 'none';
 };
 
-/* ══ PATCH: updateLastBubble — extract pearls + detect layers ══════ */
-const _origUpdateLastBubble = updateLastBubble;
+/* ══ PATCH updateLastBubble ═════════════════════════════ */
+var _baseUpdateLastBubble = updateLastBubble;
 updateLastBubble = function() {
-  _origUpdateLastBubble();
-  const last = messages[messages.length-1];
-  if (last && last.role==='assistant' && last.content) {
-    extractAndSavePearls(last.content, activeId, activeTopic?.specialty||'General');
+  _baseUpdateLastBubble();
+  var last = messages[messages.length - 1];
+  if (last && last.role === 'assistant' && last.content) {
+    extractAndSavePearls(last.content, activeId, activeTopic ? activeTopic.specialty : 'General');
     detectLayerFromText(last.content);
   }
 };
 
-/* ══ PATCH: selectTopic — show layer stepper + FAB + due banner ════ */
-const _origSelectTopic = selectTopic;
+/* ══ PATCH selectTopic ══════════════════════════════════ */
+var _baseSelectTopic = selectTopic;
 selectTopic = async function(id) {
-  await _origSelectTopic(id);
-  const stepper = document.getElementById('layer-stepper');
+  await _baseSelectTopic(id);
+  var stepper = document.getElementById('layer-stepper');
   if (stepper) stepper.style.display = 'flex';
-  const fab = document.getElementById('fab-btn');
+  var fab = document.getElementById('fab-btn');
   if (fab) fab.style.display = 'flex';
   updateDueBanner();
   updateLayerStepper(0);
 };
 
-/* ══ PATCH: renderStudyCard — add spaced rep buttons ══════════════ */
-const _origRenderStudyCard = renderStudyCard;
+/* ══ PATCH renderStudyCard — add spaced rep buttons ════ */
+var _baseRenderStudyCard = renderStudyCard;
 renderStudyCard = function() {
-  _origRenderStudyCard();
-  // Add knew/didn't know buttons to modal footer
-  const footer = document.querySelector('#studyModal .modal-footer');
+  _baseRenderStudyCard();
+  var footer = document.querySelector('#studyModal .modal-footer');
   if (footer && !footer.querySelector('.sr-btn')) {
-    const knew = document.createElement('button');
+    var knew = document.createElement('button');
     knew.className = 'modal-btn modal-btn-teal sr-btn';
     knew.innerHTML = '<i class="bi bi-check2 me-1"></i>Got it';
-    knew.style.cssText = 'font-size:.72rem';
-    knew.onclick = () => {
-      if (studyCards[studyIdx]) markFcReviewed(studyCards[studyIdx].id, true);
-      studyNav(1);
-    };
-    const hard = document.createElement('button');
+    knew.style.fontSize = '.72rem';
+    knew.onclick = function() { if (studyCards[studyIdx]) markFcReviewed(studyCards[studyIdx].id, true); studyNav(1); };
+    var hard = document.createElement('button');
     hard.className = 'modal-btn modal-btn-ghost sr-btn';
     hard.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Again';
-    hard.style.cssText = 'font-size:.72rem';
-    hard.onclick = () => {
-      if (studyCards[studyIdx]) markFcReviewed(studyCards[studyIdx].id, false);
-    };
+    hard.style.fontSize = '.72rem';
+    hard.onclick = function() { if (studyCards[studyIdx]) markFcReviewed(studyCards[studyIdx].id, false); };
     footer.insertBefore(hard, footer.firstChild);
     footer.insertBefore(knew, footer.firstChild);
   }
