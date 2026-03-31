@@ -5,6 +5,7 @@ services:
     region: oregon
     plan: starter
     rootDir: backend
+    autoDeploy: yes
     buildCommand: npm install
     startCommand: node server.js
     disk:
