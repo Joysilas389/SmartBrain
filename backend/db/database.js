@@ -4,8 +4,18 @@ const path   = require('path');
 const fs     = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+// Use /data (Render persistent disk) if available, else local data dir
+var DATA_DIR;
+try {
+  // Test if /data is writable (Render persistent disk)
+  fs.accessSync('/data', fs.constants.W_OK);
+  DATA_DIR = '/data';
+  console.log('Using persistent disk at /data');
+} catch(e) {
+  DATA_DIR = path.join(__dirname, '..', 'data');
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  console.log('Using local data dir:', DATA_DIR);
+}
 
 const adapter = new FileSync(path.join(DATA_DIR, 'db.json'));
 const db = low(adapter);

@@ -3,10 +3,14 @@ services:
     name: smartmedicine-backend
     env: node
     region: oregon
-    plan: free
+    plan: starter
     rootDir: backend
     buildCommand: npm install
     startCommand: node server.js
+    disk:
+      name: smartmedicine-data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: ANTHROPIC_API_KEY
         sync: false

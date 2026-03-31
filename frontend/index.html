@@ -910,7 +910,7 @@ body {
 
 /* FAB button */
 .fab {
-  position:fixed;bottom:76px;right:16px;z-index:500;
+  position:fixed;bottom:160px;right:14px;z-index:500;
   width:46px;height:46px;border-radius:50%;
   background:linear-gradient(135deg,var(--sm-teal),#06d6a0);
   border:none;color:white;font-size:1.2rem;
@@ -1024,7 +1024,7 @@ body {
 
       <span id="spec-badge" class="badge rounded-pill sp-General flex-shrink-0" style="font-size:.58rem"></span>
 
-      <select id="spec-select" class="form-select form-select-sm" onchange="updateSpecialty(this.value)"></select>
+      <select id="spec-select" class="form-select form-select-sm" style="display:none" onchange="updateSpecialty(this.value)"></select>
 
       <!-- Search, Mastery, Theme, Voice buttons -->
       <button class="btn-ham" data-bs-toggle="modal" data-bs-target="#searchModal" title="Search all sessions" style="flex-shrink:0">
