@@ -2597,82 +2597,465 @@ function answerExam(chosen, correct, explanation) {
   if (ss && sd) { ss.style.display = 'block'; sd.textContent = examScore.correct + '/' + examScore.total + ' (' + pct + '%)'; sd.style.color = pct >= 70 ? 'var(--sm-teal)' : pct >= 50 ? 'var(--sm-amber)' : 'var(--sm-danger)'; }
 }
 
-/* ══ PATCH switchTab for new tabs ═══════════════════════ */
-var _baseSwitchTab = switchTab;
-switchTab = function(tab) {
-  _baseSwitchTab(tab);
-  var pp = document.getElementById('pane-pearl'), ep = document.getElementById('pane-exam');
-  if (pp) pp.style.display = (tab === 'pearl') ? 'block' : 'none';
-  if (ep) ep.style.display = (tab === 'exam')  ? 'block' : 'none';
-  ['pearl','exam'].forEach(function(t) {
-    var db = document.getElementById('tb-' + t), bb = document.getElementById('bn-' + t);
-    if (db) db.classList.toggle('active', t === tab);
-    if (bb) bb.classList.toggle('active', t === tab);
+
+
+/* ══ LIGHT / DARK THEME TOGGLE ═══════════════════════════════════ */
+var isLightMode = false;
+function toggleTheme() {
+  isLightMode = !isLightMode;
+  document.body.classList.toggle('light-mode', isLightMode);
+  var icon = document.getElementById('theme-icon');
+  if (icon) icon.className = isLightMode ? 'bi bi-moon-fill' : 'bi bi-sun-fill';
+  try { localStorage.setItem('sm_theme', isLightMode ? 'light' : 'dark'); } catch(e) {}
+}
+function loadTheme() {
+  try {
+    var saved = localStorage.getItem('sm_theme');
+    if (saved === 'light') {
+      isLightMode = true;
+      document.body.classList.add('light-mode');
+      var icon = document.getElementById('theme-icon');
+      if (icon) icon.className = 'bi bi-moon-fill';
+    }
+  } catch(e) {}
+}
+
+/* ══ VOICE INPUT ══════════════════════════════════════════════════ */
+var voiceRecog = null, voiceActive = false;
+function initVoice() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  var vb = document.getElementById('voice-btn');
+  if (vb) vb.style.display = 'flex';
+  voiceRecog = new SR();
+  voiceRecog.continuous = false;
+  voiceRecog.lang = 'en-GB';
+  voiceRecog.interimResults = false;
+  voiceRecog.onresult = function(e) {
+    var t = e.results[0][0].transcript;
+    var inp = document.getElementById('msg-input');
+    inp.value = (inp.value ? inp.value + ' ' : '') + t;
+    updateCC(); inp.focus();
+  };
+  voiceRecog.onend = function() {
+    voiceActive = false;
+    var btn = document.getElementById('voice-btn'), ico = document.getElementById('voice-icon');
+    if (btn) btn.classList.remove('recording');
+    if (ico) ico.className = 'bi bi-mic-fill';
+  };
+  voiceRecog.onerror = function() { voiceActive = false; showToast('Voice input error', 'danger'); };
+}
+function toggleVoice() {
+  if (!voiceRecog) { showToast('Voice input not supported in this browser', 'amber'); return; }
+  if (voiceActive) { voiceRecog.stop(); voiceActive = false; }
+  else {
+    voiceActive = true;
+    var btn = document.getElementById('voice-btn'), ico = document.getElementById('voice-icon');
+    if (btn) btn.classList.add('recording');
+    if (ico) ico.className = 'bi bi-stop-fill';
+    showToast('Listening\u2026', 'teal');
+    try { voiceRecog.start(); } catch(e) { voiceActive = false; }
+  }
+}
+
+/* ══ FEATURES MODAL TAB SWITCHER ═════════════════════════════════ */
+var featPanes = ['sim','diff','anchor','heat','recon','bedside'];
+function featTab(name, btn) {
+  featPanes.forEach(function(p) {
+    var el = document.getElementById('fp-' + p);
+    var b  = document.getElementById('ft-' + p);
+    if (el) el.style.display = (p === name) ? 'block' : 'none';
+    if (b)  b.classList.toggle('active', p === name);
   });
-  var fab = document.getElementById('fab-btn');
-  if (fab) fab.style.display = (tab === 'chat' && activeId) ? 'flex' : 'none';
-  var iz = document.getElementById('input-zone');
-  if (iz) iz.style.display = tab === 'chat' ? 'block' : 'none';
+  if (name === 'anchor') renderAnchors();
+  if (name === 'heat')   renderHeatMap();
+}
+
+/* ══ VIRTUAL PATIENT SIMULATOR ═══════════════════════════════════ */
+var simMessages = [], simCase = null;
+function startPatientSim() {
+  var spec = (document.getElementById('sim-specialty') || {}).value || 'Cardiology';
+  var diff = (document.getElementById('sim-difficulty') || {}).value || 'Intermediate';
+  simMessages = []; simCase = null;
+  var outEl = document.getElementById('sim-output');
+  var msgEl = document.getElementById('sim-messages');
+  if (outEl) outEl.style.display = 'block';
+  if (msgEl) msgEl.innerHTML = '';
+  simAddMsg('system', 'Starting ' + diff + ' encounter in ' + spec + '\u2026');
+  var prompt = 'You are running a clinical simulation for Dr. Agbesi. Generate a realistic '
+    + diff + ' level patient case in ' + spec + ' (Ghana context where relevant). '
+    + 'Start by describing the patient walking in: age, sex, chief complaint, first impression. '
+    + 'Do NOT give the diagnosis. Dr. Agbesi will question and examine. Respond AS the patient/nurse/lab. '
+    + 'Keep responses concise (2-4 sentences). When investigations are ordered, give realistic results. '
+    + 'End with: "What would you like to do first?"';
+  runSimTurn(prompt, true);
+}
+function simAddMsg(role, text) {
+  var msgEl = document.getElementById('sim-messages');
+  if (!msgEl) return;
+  var div = document.createElement('div');
+  if (role === 'doctor') {
+    div.style.cssText = 'background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.2);border-radius:14px 14px 4px 14px;padding:10px 14px;margin-bottom:8px;font-size:.85rem;color:var(--sm-text1)';
+    div.innerHTML = '<strong style="color:var(--sm-teal)">Dr. Agbesi:</strong> ' + esc(text);
+  } else {
+    div.className = 'patient-bubble mb-2';
+    div.innerHTML = '<strong style="color:#a78bfa">Patient/Nurse:</strong> ' + esc(text);
+  }
+  msgEl.appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth' });
+}
+async function runSimTurn(prompt, isFirst) {
+  var simInp = document.getElementById('sim-input');
+  var msgs = isFirst ? [{ role:'user', content:prompt }]
+    : simMessages.concat([{ role:'user', content: simInp ? simInp.value.trim() : '' }]);
+  if (!isFirst && simInp) { simAddMsg('doctor', simInp.value.trim()); simInp.value = ''; }
+  simMessages = msgs;
+  var loadDiv = document.createElement('div');
+  loadDiv.className = 'patient-bubble mb-2';
+  loadDiv.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  var msgEl = document.getElementById('sim-messages');
+  if (msgEl) msgEl.appendChild(loadDiv);
+  try {
+    var res = await fetch(API + '/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ messages:msgs, topic_id:null }) });
+    var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', full = '';
+    while (true) { var rv = await reader.read(); if(rv.done)break; buf+=dec.decode(rv.value,{stream:true}); var lines=buf.split('\n');buf=lines.pop()||''; for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}} }
+    if (loadDiv.parentNode) loadDiv.remove();
+    simAddMsg('patient', full.trim());
+    simMessages.push({ role:'assistant', content:full });
+    simCase = { messages:simMessages, specialty:(document.getElementById('sim-specialty')||{}).value||'General' };
+  } catch(e) { if(loadDiv.parentNode)loadDiv.remove(); simAddMsg('system','Error: '+e.message); }
+}
+function simSend() {
+  var inp = document.getElementById('sim-input');
+  if (!inp || !inp.value.trim()) return;
+  runSimTurn(null, false);
+}
+function simRevealDiagnosis() {
+  if (!simCase) return;
+  var revPrompt = 'The clinical encounter is over. Reveal the diagnosis and teach every step from first principles. What did Dr. Agbesi get right, what did he miss, and how to never miss this again.';
+  var m = bootstrap.Modal.getInstance(document.getElementById('featuresModal'));
+  if (m) m.hide();
+  setTimeout(function() { if (!activeId) newSession(revPrompt); else { injectPrompt(revPrompt); sendMessage(); } }, 400);
+}
+
+/* ══ DIFFERENTIAL DIAGNOSIS ENGINE ══════════════════════════════ */
+async function runDiffDx() {
+  var inp = document.getElementById('diff-input');
+  var out = document.getElementById('diff-output');
+  if (!inp || !inp.value.trim()) { showToast('Enter symptoms first', 'amber'); return; }
+  out.innerHTML = '<div class="typing-dots justify-content-center py-3"><span></span><span></span><span></span></div>';
+  var prompt = 'Dr. Agbesi presents: "' + inp.value.trim() + '". '
+    + 'Generate ranked differential (top 6). For each: '
+    + 'DIAGNOSIS: [name] | PROBABILITY: [High/Medium/Low] | MECHANISM: [one sentence] | KEY FINDING: [one discriminating finding]. '
+    + 'Then SEPARATOR: followed by a mechanistic teaching paragraph about the most likely diagnosis.';
+  try {
+    var res = await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:prompt}],topic_id:null})});
+    var reader=res.body.getReader(),dec=new TextDecoder(),buf='',full='';
+    while(true){var rv=await reader.read();if(rv.done)break;buf+=dec.decode(rv.value,{stream:true});var lines=buf.split('\n');buf=lines.pop()||'';for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}}}
+    renderDiffDx(full, out);
+  } catch(e) { out.innerHTML='<div style="color:var(--sm-danger);font-size:.8rem">'+esc(e.message)+'</div>'; }
+}
+function renderDiffDx(text, out) {
+  var cols = {High:'var(--sm-danger)',Medium:'var(--sm-amber)',Low:'var(--sm-teal)'};
+  var lines = text.split('\n').filter(function(l){return l.indexOf('DIAGNOSIS:')>-1;});
+  var sepIdx = text.indexOf('SEPARATOR:');
+  var teaching = sepIdx>-1 ? text.slice(sepIdx+10).trim() : '';
+  var h='';
+  lines.forEach(function(line,i){
+    var diag=(line.match(/DIAGNOSIS:\s*([^|]+)/)||[])[1]||'';
+    var prob=(line.match(/PROBABILITY:\s*([^|]+)/)||[])[1]||'';
+    var mech=(line.match(/MECHANISM:\s*([^|]+)/)||[])[1]||'';
+    var key =(line.match(/KEY FINDING:\s*(.+)/)||[])[1]||'';
+    if(!diag)return;
+    var col=cols[prob.trim()]||'var(--sm-text3)';
+    h+='<div class="diff-card" onclick="learnDiff(\''+esc(diag.trim())+'\')">';
+    h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
+    h+='<span style="font-size:.76rem;font-weight:800;color:'+col+'">'+esc(diag.trim())+'</span>';
+    h+='<span style="font-size:.68rem;font-weight:700;color:'+col+';margin-left:auto">'+esc(prob.trim())+'</span></div>';
+    if(mech)h+='<div style="font-size:.74rem;color:var(--sm-text2);margin-bottom:3px">\u2699 '+esc(mech.trim())+'</div>';
+    if(key) h+='<div style="font-size:.72rem;color:var(--sm-text3)">\uD83D\uDD11 '+esc(key.trim())+'</div>';
+    h+='</div>';
+  });
+  if(teaching)h+='<div class="challenge-box mt-2"><div style="font-size:.65rem;font-weight:700;color:var(--sm-text3);margin-bottom:.4rem;font-family:var(--sm-mono)">MOST LIKELY \u2014 MECHANISM</div><div style="font-size:.82rem;color:var(--sm-text1);line-height:1.7">'+esc(teaching.slice(0,600))+'</div></div>';
+  out.innerHTML = h || '<div style="color:var(--sm-text3);font-size:.8rem">Could not parse. Try again.</div>';
+}
+function learnDiff(condition) {
+  var m=bootstrap.Modal.getInstance(document.getElementById('featuresModal'));
+  if(m)m.hide();
+  setTimeout(function(){ var p='Teach me '+condition+' from absolute first principles \u2014 Layer 0 to 5. Include 12-lead ECG if cardiac.'; if(!activeId)newSession(p);else{injectPrompt(p);sendMessage();} },400);
+}
+
+/* ══ CLINICAL ANCHOR LIBRARY ═════════════════════════════════════ */
+var anchors = [];
+function loadAnchors() { try{anchors=JSON.parse(localStorage.getItem('sm_anchors')||'[]');}catch(e){anchors=[];} }
+function saveAnchors() { try{localStorage.setItem('sm_anchors',JSON.stringify(anchors));}catch(e){} }
+function renderAnchors() {
+  loadAnchors();
+  var list=document.getElementById('anchor-list'), empty=document.getElementById('anchor-empty');
+  if(!list)return;
+  if(anchors.length===0){list.innerHTML='';if(empty)empty.style.display='block';return;}
+  if(empty)empty.style.display='none';
+  list.innerHTML=anchors.map(function(a,i){
+    return '<div class="anchor-card"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'
+      +'<div><div style="font-size:.78rem;font-weight:700;color:#a78bfa;margin-bottom:3px">\u2693 '+esc(a.concept)+'</div>'
+      +'<div style="font-size:.8rem;color:var(--sm-text1);line-height:1.6">'+esc(a.anchor)+'</div>'
+      +(a.specialty?'<span class="badge rounded-pill sp-'+a.specialty.replace(/ /g,'_')+' mt-1" style="font-size:.54rem">'+esc(a.specialty)+'</span>':'')+'</div>'
+      +'<button onclick="deleteAnchor('+i+')" style="background:none;border:none;color:var(--sm-text3);cursor:pointer;font-size:.75rem;flex-shrink:0"><i class="bi bi-trash"></i></button>'
+      +'</div></div>';
+  }).join('');
+}
+function addAnchor() {
+  var concept=prompt('Concept (e.g. Coronary Anatomy):'); if(!concept)return;
+  var anchor=prompt('Your spatial anchor:'); if(!anchor)return;
+  loadAnchors();
+  anchors.unshift({concept:concept,anchor:anchor,specialty:activeTopic?activeTopic.specialty:'General',date:new Date().toISOString()});
+  saveAnchors(); renderAnchors(); showToast('\u2693 Anchor saved!','teal');
+}
+function deleteAnchor(i){loadAnchors();anchors.splice(i,1);saveAnchors();renderAnchors();}
+function extractAnchors(text,specialty){
+  if(!text)return;
+  var re=/[Ss]patial anchor[^:]*:\s*([^\n]+)/g,m;
+  while((m=re.exec(text))!==null){
+    var anchor=m[1].trim().replace(/[*_]/g,'');
+    if(anchor.length>10){
+      loadAnchors();
+      if(!anchors.some(function(a){return a.anchor===anchor;})){
+        anchors.unshift({concept:activeTopic?activeTopic.title:'Concept',anchor:anchor,specialty:specialty||'General',date:new Date().toISOString()});
+        saveAnchors();
+      }
+    }
+  }
+}
+
+/* ══ WEAK SPOT HEAT MAP ══════════════════════════════════════════ */
+var weakSpotData={};
+function loadWeakSpots(){try{weakSpotData=JSON.parse(localStorage.getItem('sm_weakspots')||'{}');}catch(e){weakSpotData={};}}
+function saveWeakSpots(){try{localStorage.setItem('sm_weakspots',JSON.stringify(weakSpotData));}catch(e){}}
+function recordExamResult(specialty,correct){
+  loadWeakSpots();
+  if(!weakSpotData[specialty])weakSpotData[specialty]={correct:0,total:0};
+  weakSpotData[specialty].total++;
+  if(correct)weakSpotData[specialty].correct++;
+  saveWeakSpots();
+}
+function renderHeatMap(){
+  loadWeakSpots();
+  var el=document.getElementById('heat-map'); if(!el)return;
+  var specs=['Cardiology','Respiratory','Nephrology','Neurology','Endocrinology','Haematology',
+    'Gastroenterology','Pharmacology','Infectious Disease','Surgery','Obstetrics',
+    'Paediatrics','Psychiatry','Anatomy','Physiology','Biochemistry','Pathology','Microbiology'];
+  var h='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">',hasData=false;
+  specs.forEach(function(s){
+    var d=weakSpotData[s],pct=d&&d.total>0?Math.round(d.correct/d.total*100):-1;
+    var bg,col;
+    if(pct===-1){bg='rgba(255,255,255,0.04)';col='var(--sm-text3)';}
+    else if(pct<40){bg='rgba(244,63,94,0.2)';col='#fda4af';hasData=true;}
+    else if(pct<70){bg='rgba(245,158,11,0.2)';col='#fcd34d';hasData=true;}
+    else{bg='rgba(20,184,166,0.15)';col='#5eead4';hasData=true;}
+    h+='<div class="heat-cell" style="background:'+bg+';color:'+col+'" onclick="drillTopic(\''+s+'\')">'
+      +'<div style="font-size:.6rem;margin-bottom:2px">'+esc(s.slice(0,12))+'</div>'
+      +'<div style="font-size:.78rem;font-weight:800">'+(pct===-1?'—':pct+'%')+'</div>'
+      +(d&&d.total>0?'<div style="font-size:.56rem;opacity:.6">'+d.correct+'/'+d.total+'</div>':'')
+      +'</div>';
+  });
+  h+='</div>';
+  if(!hasData)h+='<div style="text-align:center;margin-top:.75rem;font-size:.78rem;color:var(--sm-text3)">Answer USMLE questions to build your heat map.</div>';
+  el.innerHTML=h;
+}
+function drillWeakSpot(){
+  loadWeakSpots();
+  var worst=null,worstPct=100;
+  for(var s in weakSpotData){var d=weakSpotData[s];if(d.total>0){var p=d.correct/d.total;if(p<worstPct){worstPct=p;worst=s;}}}
+  if(!worst){showToast('Answer some USMLE questions first','amber');return;}
+  var m=bootstrap.Modal.getInstance(document.getElementById('featuresModal'));
+  if(m)m.hide();
+  setTimeout(function(){drillTopic(worst);},400);
+}
+function drillTopic(spec){
+  var m=bootstrap.Modal.getInstance(document.getElementById('featuresModal'));
+  if(m)m.hide();
+  setTimeout(function(){
+    var p='I am weak in '+spec+'. Teach me the highest-yield mechanisms in '+spec+' from absolute first principles. Be extremely thorough.';
+    if(!activeId)newSession(p);else{injectPrompt(p);sendMessage();}
+  },400);
+}
+
+/* ══ RECONSTRUCTION CHALLENGE ════════════════════════════════════ */
+async function newReconChallenge(){
+  document.getElementById('recon-start').style.display='none';
+  document.getElementById('recon-challenge').style.display='block';
+  document.getElementById('recon-result').style.display='none';
+  var qa=document.getElementById('recon-answer'); if(qa)qa.value='';
+  var qq=document.getElementById('recon-question'); if(qq)qq.textContent='\u29F3 Generating\u2026';
+  var spec=activeTopic?activeTopic.specialty:'General Medicine';
+  var prompt='Generate ONE hard reconstruction challenge for Dr. Agbesi about '+spec+'. '
+    +'A clinical scenario requiring full mechanism reconstruction from molecular to bedside. '
+    +'Output ONLY the question itself \u2014 no answer, no preamble. Make it mechanistically rich.';
+  try{
+    var res=await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:prompt}],topic_id:null})});
+    var reader=res.body.getReader(),dec=new TextDecoder(),buf='',full='';
+    while(true){var rv=await reader.read();if(rv.done)break;buf+=dec.decode(rv.value,{stream:true});var lines=buf.split('\n');buf=lines.pop()||'';for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}}}
+    if(qq)qq.textContent=full.trim();
+  }catch(e){if(qq)qq.textContent='Error. Try again.';}
+}
+async function gradeReconstruction(){
+  var qq=document.getElementById('recon-question');
+  var qa=document.getElementById('recon-answer');
+  var res2=document.getElementById('recon-result');
+  if(!qa||qa.value.trim().length<20){showToast('Write your reconstruction first','amber');return;}
+  res2.style.display='block';
+  res2.innerHTML='<div class="typing-dots py-2"><span></span><span></span><span></span></div>';
+  var prompt='Grade Dr. Agbesi\'s reconstruction. QUESTION: '+(qq?qq.textContent:'')+'\nHIS ANSWER: '+qa.value.trim()
+    +'\n\n1) What he got RIGHT 2) What he MISSED 3) What was WRONG 4) Full correct reconstruction 5) Score /10.';
+  try{
+    var res=await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:prompt}],topic_id:null})});
+    var reader=res.body.getReader(),dec=new TextDecoder(),buf='',full='';
+    while(true){var rv=await reader.read();if(rv.done)break;buf+=dec.decode(rv.value,{stream:true});var lines=buf.split('\n');buf=lines.pop()||'';for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}}}
+    res2.innerHTML='<div class="challenge-box"><div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;color:var(--sm-text3);margin-bottom:.4rem;font-family:var(--sm-mono)">GRADING RESULT</div><div style="font-size:.84rem;color:var(--sm-text1);line-height:1.75">'+esc(full.trim())+'</div></div>';
+  }catch(e){res2.innerHTML='<div style="color:var(--sm-danger);font-size:.8rem">'+esc(e.message)+'</div>';}
+}
+
+/* ══ BEDSIDE MODE ════════════════════════════════════════════════ */
+async function runBedside(){
+  var inp=document.getElementById('bedside-input');
+  var out=document.getElementById('bedside-output');
+  if(!inp||!inp.value.trim()){showToast('Describe your patient findings first','amber');return;}
+  out.innerHTML='<div class="typing-dots py-2"><span></span><span></span><span></span></div>';
+  var prompt='BEDSIDE MODE \u2014 Dr. Agbesi is at the bedside RIGHT NOW. '
+    +'Findings: "'+inp.value.trim()+'". '
+    +'Give: 1) Most likely diagnosis + immediate mechanism (2-3 sentences) '
+    +'2) The ONE most important action RIGHT NOW and why '
+    +'3) Red flags to watch in next 30 minutes '
+    +'4) Quick 3-point teaching to never forget this. Be concise and actionable.';
+  try{
+    var res=await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:prompt}],topic_id:null})});
+    var reader=res.body.getReader(),dec=new TextDecoder(),buf='',full='';
+    while(true){var rv=await reader.read();if(rv.done)break;buf+=dec.decode(rv.value,{stream:true});var lines=buf.split('\n');buf=lines.pop()||'';for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}}}
+    out.innerHTML='<div class="challenge-box">'+esc(full.trim())+'</div>';
+    loadAnchors();
+    anchors.unshift({concept:'Bedside: '+inp.value.trim().slice(0,50),anchor:full.slice(0,200),specialty:activeTopic?activeTopic.specialty:'General',date:new Date().toISOString()});
+    saveAnchors();
+  }catch(e){out.innerHTML='<div style="color:var(--sm-danger);font-size:.8rem">'+esc(e.message)+'</div>';}
+}
+
+/* ══ CROSS-SPECIALTY CONNECTOR ═══════════════════════════════════ */
+function checkCrossConnections(text,specialty){
+  if(!text||!topics||topics.length<2)return;
+  var kws=extractKeywords(text);
+  var related=topics.filter(function(t){return t.id!==activeId&&t.specialty!==specialty&&kws.some(function(k){return t.title.toLowerCase().indexOf(k)>-1;});});
+  if(related.length>0&&related.length<4){
+    var names=related.slice(0,2).map(function(t){return '"'+t.title+'"';}).join(' and ');
+    setTimeout(function(){showToast('\uD83D\uDD17 Connected to your session on '+names,'amber');},2000);
+  }
+}
+function extractKeywords(text){
+  var stopwords=['the','and','for','that','this','with','from','have','been','which','they','will','are','its'];
+  return text.toLowerCase().replace(/[^a-z ]/g,' ').split(' ')
+    .filter(function(w){return w.length>5&&stopwords.indexOf(w)===-1;}).slice(0,20);
+}
+
+/* ══ ALL PATCHES — clean, no stacking issues ══════════════════════
+   Each patch saves original ONCE, extends cleanly
+═══════════════════════════════════════════════════════════════════ */
+
+/* switchTab — add pearl, exam panes + FAB + input-zone visibility */
+var _origSwitchTab = switchTab;
+switchTab = function(tab) {
+  _origSwitchTab(tab);
+  var pp=document.getElementById('pane-pearl'), ep=document.getElementById('pane-exam');
+  if(pp) pp.style.display = (tab==='pearl') ? 'block' : 'none';
+  if(ep) ep.style.display = (tab==='exam')  ? 'block' : 'none';
+  ['pearl','exam'].forEach(function(t){
+    var db=document.getElementById('tb-'+t), bb=document.getElementById('bn-'+t);
+    if(db)db.classList.toggle('active',t===tab);
+    if(bb)bb.classList.toggle('active',t===tab);
+  });
+  var fab=document.getElementById('fab-btn');
+  if(fab)fab.style.display=(tab==='chat'&&activeId)?'flex':'none';
+  var iz=document.getElementById('input-zone');
+  if(iz)iz.style.display=tab==='chat'?'block':'none';
+  if(tab==='chat'){restoreAttachment();}
+  if(messages&&messages.length>2){var eb=document.getElementById('export-btn');if(eb)eb.style.display='flex';}
 };
 
-/* ══ PATCH updateLastBubble ═════════════════════════════ */
-var _baseUpdateLastBubble = updateLastBubble;
+/* updateLastBubble — detect layer + extract anchors + cross-connect */
+var _origUpdateLastBubble = updateLastBubble;
 updateLastBubble = function() {
-  _baseUpdateLastBubble();
-  // Only detect layer during streaming (lightweight text check)
-  // Pearl extraction happens only on 'done' to prevent repetition
-  var last = messages[messages.length - 1];
-  if (last && last.role === 'assistant' && last.content) {
+  _origUpdateLastBubble();
+  var last=messages[messages.length-1];
+  if(last&&last.role==='assistant'&&last.content){
     detectLayerFromText(last.content);
   }
 };
 
-/* ══ PATCH selectTopic ══════════════════════════════════ */
-var _baseSelectTopic = selectTopic;
+/* selectTopic — show stepper + FAB + due banner */
+var _origSelectTopic = selectTopic;
 selectTopic = async function(id) {
-  await _baseSelectTopic(id);
-  var stepper = document.getElementById('layer-stepper');
-  if (stepper) stepper.style.display = 'flex';
-  var fab = document.getElementById('fab-btn');
-  if (fab) fab.style.display = 'flex';
+  await _origSelectTopic(id);
+  var stepper=document.getElementById('layer-stepper');
+  if(stepper)stepper.style.display='flex';
+  var fab=document.getElementById('fab-btn');
+  if(fab)fab.style.display='flex';
+  var vb=document.getElementById('voice-btn');
+  if(vb)vb.style.display='flex';
+  var eb=document.getElementById('export-btn');
+  if(eb&&messages&&messages.length>2)eb.style.display='flex';
   updateDueBanner();
   updateLayerStepper(0);
 };
 
-/* ══ PATCH renderStudyCard — add spaced rep buttons ════ */
-var _baseRenderStudyCard = renderStudyCard;
+/* renderStudyCard — add Got it / Again spaced rep buttons */
+var _origRenderStudyCard = renderStudyCard;
 renderStudyCard = function() {
-  _baseRenderStudyCard();
-  var footer = document.querySelector('#studyModal .modal-footer');
-  if (footer && !footer.querySelector('.sr-btn')) {
-    var knew = document.createElement('button');
-    knew.className = 'modal-btn modal-btn-teal sr-btn';
-    knew.innerHTML = '<i class="bi bi-check2 me-1"></i>Got it';
-    knew.style.fontSize = '.72rem';
-    knew.onclick = function() { if (studyCards[studyIdx]) markFcReviewed(studyCards[studyIdx].id, true); studyNav(1); };
-    var hard = document.createElement('button');
-    hard.className = 'modal-btn modal-btn-ghost sr-btn';
-    hard.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Again';
-    hard.style.fontSize = '.72rem';
-    hard.onclick = function() { if (studyCards[studyIdx]) markFcReviewed(studyCards[studyIdx].id, false); };
-    footer.insertBefore(hard, footer.firstChild);
-    footer.insertBefore(knew, footer.firstChild);
+  _origRenderStudyCard();
+  var footer=document.querySelector('#studyModal .modal-footer');
+  if(footer&&!footer.querySelector('.sr-btn')){
+    var knew=document.createElement('button');
+    knew.className='modal-btn modal-btn-teal sr-btn';
+    knew.innerHTML='<i class="bi bi-check2 me-1"></i>Got it';
+    knew.style.fontSize='.72rem';
+    knew.onclick=function(){if(studyCards[studyIdx])markFcReviewed(studyCards[studyIdx].id,true);studyNav(1);};
+    var hard=document.createElement('button');
+    hard.className='modal-btn modal-btn-ghost sr-btn';
+    hard.innerHTML='<i class="bi bi-arrow-repeat me-1"></i>Again';
+    hard.style.fontSize='.72rem';
+    hard.onclick=function(){if(studyCards[studyIdx])markFcReviewed(studyCards[studyIdx].id,false);};
+    footer.insertBefore(hard,footer.firstChild);
+    footer.insertBefore(knew,footer.firstChild);
   }
 };
 
+/* answerExam — record weak spot result */
+var _origAnswerExam = answerExam;
+answerExam = function(chosen, correct, explanation) {
+  _origAnswerExam(chosen, correct, explanation);
+  recordExamResult(activeTopic ? activeTopic.specialty : 'General', chosen === correct);
+};
 
-/* ══ 12-LEAD ECG RENDERER ══════════════════════════════════════════
-   Parses structured [ecg] blocks and renders a full 12-lead ECG
-   with proper grid, calibration pulse, all 12 leads labelled,
-   colour-coded trace, measurements — like a real hospital printout
-════════════════════════════════════════════════════════════════════ */
-function renderECGSVG(rawText) {
-  var id = 'ecg-' + Date.now() + '-' + Math.floor(Math.random()*9999);
-  setTimeout(function() { drawECG12Lead(id, rawText); }, 100);
-  return '<div class="ecg-wrap">'
-       + '<div class="ecg-canvas-wrap"><canvas id="' + id + '"></canvas></div>'
-       + '</div>';
-}
+/* newSession — request notification permission on first session */
+var _origNewSession = newSession;
+newSession = async function(pre) {
+  await _origNewSession(pre);
+  if (topics.length === 1) {
+    setTimeout(requestNotifPermission, 5000);
+  }
+};
+
+/* done event in sendMessage — extract pearls + anchors + cross-connect */
+var _origSendMessage = sendMessage;
+sendMessage = async function() {
+  await _origSendMessage.apply(this, arguments);
+};
+
+/* ══ BOOT PATCHES — run after init() ════════════════════════════ */
+var _origInit = init;
+init = function() {
+  _origInit();
+  loadTheme();
+  initVoice();
+  loadAnchors();
+};
+
 
 function drawECG12Lead(id, text) {
   var canvas = document.getElementById(id);
@@ -2685,30 +3068,21 @@ function drawECG12Lead(id, text) {
   // Paper: 25mm/s, 10mm/mV standard
   // Each lead strip: 10 seconds wide = 250mm
   // We render at screen scale: 1 big box (5mm) = bigBox px
-  // ── Fixed scale matching real ECG paper ──
-  // 1mm = 4px on screen → small boxes are clearly visible (4px)
-  // 5mm big box = 20px → very clear
-  // 10s of data per column (like real 12-lead ECG paper at 25mm/s)
-  var mmPx     = 4.0;
-  var bigBox   = mmPx * 5;    // 20px
-  var smallBox = mmPx;        // 4px — CLEARLY VISIBLE
+  var CONTAINER_W = Math.max(parent ? parent.offsetWidth || 800 : 800, 600);
+  
+  // Layout: 2 columns of 6 leads + rhythm strip at bottom
+  // Left col: I,II,III,aVR,aVL,aVF  Right col: V1,V2,V3,V4,V5,V6
+  var COL_W    = Math.floor(CONTAINER_W / 2);  // each column = half width
+  var LEAD_H   = 90;    // height per lead strip in px
+  var STRIP_H  = 80;    // rhythm strip height
+  var HEADER_H = 48;    // patient info header
+  var TOTAL_H  = HEADER_H + 6 * LEAD_H + 8 + STRIP_H + 16;
 
-  // 10 seconds at 25mm/s = 250mm per column
-  var TEN_SEC_PX = 250 * mmPx;  // 1000px per column
-  var COL_W      = TEN_SEC_PX + 30;  // +30 for cal pulse + label
-  var CONTAINER_W = COL_W * 2;       // both columns side by side
-
-  var LEAD_H   = 110;   // taller leads = more readable waveforms
-  var STRIP_H  = 100;   // rhythm strip taller for better visibility
-  var HEADER_H = 52;
-  var TOTAL_H  = HEADER_H + 6 * LEAD_H + 8 + STRIP_H + 20;
-
-  // HiDPI canvas
+  // Set canvas size with HiDPI
   canvas.width        = CONTAINER_W * DPR;
   canvas.height       = TOTAL_H * DPR;
   canvas.style.width  = CONTAINER_W + 'px';
   canvas.style.height = TOTAL_H + 'px';
-  canvas.style.display = 'block';
 
   var ctx = canvas.getContext('2d');
   ctx.scale(DPR, DPR);
@@ -2750,9 +3124,16 @@ function drawECG12Lead(id, text) {
   var isLongQT     = t.indexOf('long qt') > -1 || t.indexOf('prolonged qt') > -1;
   var isSVT        = t.indexOf('svt') > -1;
 
+  // Fixed 4px/mm scale — small boxes always visible
+  var mmPx     = 4.0;
+  var bigBox   = mmPx * 5;
+  var smallBox = mmPx;
+  var TEN_SEC_PX = 250 * mmPx;
+  var COL_W      = TEN_SEC_PX + 30;
+  var CONTAINER_W = COL_W * 2;
   // ── Draw grid function ──
   function drawGrid(x0, y0, w, h) {
-    // 1mm small boxes — clearly visible pink/red like real ECG paper
+    // 1mm small boxes — red-pink like real ECG paper
     ctx.strokeStyle = 'rgba(220,80,80,0.22)';
     ctx.lineWidth   = 0.6;
     for (var xi = 0; xi <= w; xi += smallBox) {
@@ -2761,9 +3142,9 @@ function drawECG12Lead(id, text) {
     for (var yi = 0; yi <= h; yi += smallBox) {
       ctx.beginPath(); ctx.moveTo(x0, y0+yi); ctx.lineTo(x0+w, y0+yi); ctx.stroke();
     }
-    // 5mm large boxes — darker red like real ECG paper
-    ctx.strokeStyle = 'rgba(220,60,60,0.45)';
-    ctx.lineWidth   = 1.1;
+    // 5mm large boxes
+    ctx.strokeStyle = 'rgba(0,210,100,0.3)';
+    ctx.lineWidth   = 0.9;
     for (var xb = 0; xb <= w; xb += bigBox) {
       ctx.beginPath(); ctx.moveTo(x0+xb, y0); ctx.lineTo(x0+xb, y0+h); ctx.stroke();
     }
@@ -2773,12 +3154,8 @@ function drawECG12Lead(id, text) {
   }
 
   // ── Background ──
-  // Background — dark clinical green (like real ECG paper reverse-colour)
   ctx.fillStyle = '#040e08';
   ctx.fillRect(0, 0, CONTAINER_W, TOTAL_H);
-  // Subtle column separator
-  ctx.fillStyle = 'rgba(0,0,0,0.15)';
-  ctx.fillRect(COL_W, 0, 1, TOTAL_H);
 
   // ── Header ──
   ctx.fillStyle = '#00c864';
@@ -2960,7 +3337,7 @@ function drawECG12Lead(id, text) {
   // ── Draw one lead strip ──
   function drawLead(label, x0, y0, w, h, color) {
     var baseline = y0 + h * 0.52;
-    var ampScale = (h * 0.38) / (10 * mmPx);  // scale so 10mm = 38% of lead height (taller leads)
+    var ampScale = (h * 0.42) / (10 * mmPx);  // scale so 10mm = 42% of lead height
 
     // Grid
     drawGrid(x0, y0, w, h);
@@ -3001,9 +3378,9 @@ function drawECG12Lead(id, text) {
     ctx.clip();
 
     ctx.strokeStyle = color || '#00e676';
-    ctx.lineWidth   = 2.0;
-    ctx.shadowColor = (color || '#00e676').replace(')', ',0.4)').replace('rgb','rgba');
-    ctx.shadowBlur  = 4;
+    ctx.lineWidth   = 1.8;
+    ctx.shadowColor = (color || '#00e676').replace(')', ',0.35)').replace('rgb','rgba');
+    ctx.shadowBlur  = 3;
     ctx.lineJoin    = 'round';
     ctx.lineCap     = 'round';
     ctx.beginPath();
@@ -3072,7 +3449,7 @@ function requestNotifPermission() {
   if (Notification.permission === 'default') {
     Notification.requestPermission().then(function(perm) {
       if (perm === 'granted') {
-        showToast('🔔 Notifications enabled! You will be reminded to review cards.', 'teal');
+        showToast('\uD83D\uDD14 Notifications enabled!', 'teal');
         scheduleSpacedRepReminder();
       }
     });
@@ -3080,49 +3457,25 @@ function requestNotifPermission() {
     scheduleSpacedRepReminder();
   }
 }
-
-function sendNotification(title, body, icon) {
+function sendNotification(title, body) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  try {
-    new Notification(title, {
-      body:  body,
-      icon:  'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚕</text></svg>',
-      badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚕</text></svg>',
-      tag:   'smartmedicine-reminder',
-    });
-  } catch(e) {}
+  try { new Notification(title, { body:body, tag:'smartmedicine-reminder' }); } catch(e) {}
 }
-
 function scheduleSpacedRepReminder() {
-  // Check every 30 minutes if cards are due
   setInterval(function() {
-    var due = getDueFlashcards ? getDueFlashcards() : [];
+    var due = typeof getDueFlashcards === 'function' ? getDueFlashcards() : [];
     if (due.length > 0 && document.hidden) {
-      sendNotification(
-        'SmartMedicine — ' + due.length + ' cards due',
-        'Your spaced repetition review is ready. Tap to study.',
-      );
+      sendNotification('SmartMedicine \u2014 ' + due.length + ' cards due', 'Your spaced repetition review is ready.');
     }
   }, 30 * 60 * 1000);
-
-  // Also check immediately on load
   setTimeout(function() {
-    var due = getDueFlashcards ? getDueFlashcards() : [];
-    if (due.length > 0) {
-      showToast('🔔 ' + due.length + ' flashcard' + (due.length > 1 ? 's' : '') + ' due for review!', 'amber');
-    }
+    var due = typeof getDueFlashcards === 'function' ? getDueFlashcards() : [];
+    if (due.length > 0) showToast('\uD83D\uDD14 ' + due.length + ' flashcard' + (due.length>1?'s':'') + ' due for review!', 'amber');
   }, 3000);
 }
 
-// Ask for notification permission after first session is created
-var _prevNewSession = newSession;
-newSession = async function(pre) {
-  await _prevNewSession(pre);
-  if (topics.length === 1) {
-    // First session ever — ask for notification permission
-    setTimeout(requestNotifPermission, 5000);
-  }
-};
+
+/* ══ BOOT PATCHES — run after init() ════════════════════════════ */
 
 /* ══ BOOT ════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', init);
