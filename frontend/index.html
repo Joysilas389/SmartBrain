@@ -87,6 +87,54 @@ body.light-mode .mermaid-wrap { background: #f8fcff !important; }
 body.light-mode .ecg-wrap { background: #040e08 !important; } /* keep ECG dark always */
 body.light-mode #bg-canvas { opacity: 0.06 !important; }
 body.light-mode .bottom-nav { background: var(--sm-surface) !important; }
+
+/* ── Light mode: ALL text elements ── */
+body.light-mode .topic-title { color: var(--sm-text1) !important; }
+body.light-mode .topic-item:hover .topic-title { color: #0f2040 !important; }
+body.light-mode .brand-name { color: #0f2040 !important; }
+body.light-mode .brand-tag { color: var(--sm-text3) !important; }
+body.light-mode .tab-btn { color: var(--sm-text2) !important; }
+body.light-mode .tab-btn.active { color: var(--sm-teal) !important; }
+body.light-mode .bnav-btn { color: var(--sm-text2) !important; }
+body.light-mode .bnav-btn.active, body.light-mode .bnav-btn:hover { color: var(--sm-teal) !important; }
+body.light-mode .fpill { color: var(--sm-text2) !important; border-color: rgba(20,184,166,0.3) !important; }
+body.light-mode .fpill.active { color: var(--sm-teal) !important; }
+body.light-mode .btn-ham { color: var(--sm-text2) !important; background: #e8eef5 !important; border-color: rgba(20,184,166,0.25) !important; }
+body.light-mode .btn-ham:hover { color: var(--sm-teal) !important; }
+body.light-mode .btn-theme { color: var(--sm-text2) !important; background: #e8eef5 !important; }
+body.light-mode #topbar-title { color: #0f2040 !important; }
+body.light-mode #topbar { border-bottom-color: rgba(20,184,166,0.2) !important; }
+body.light-mode .sb-search-input { color: var(--sm-text1) !important; background: #f0f6ff !important; }
+body.light-mode .sb-search-input::placeholder { color: var(--sm-text3) !important; }
+body.light-mode .sb-accordion .accordion-button { color: var(--sm-text2) !important; background: transparent !important; }
+body.light-mode .accordion-item { background: transparent !important; }
+body.light-mode .accordion-body { background: transparent !important; }
+body.light-mode select, body.light-mode option { color: var(--sm-text1) !important; background: var(--sm-surface) !important; }
+body.light-mode #qp-select { color: var(--sm-text2) !important; }
+body.light-mode .fc-txt { color: #0f2040 !important; }
+body.light-mode .fc-lbl { color: rgba(0,80,160,0.6) !important; }
+body.light-mode .fc-front { background: rgba(0,80,180,0.08) !important; border-color: rgba(0,80,180,0.2) !important; }
+body.light-mode .fc-back { background: rgba(0,120,80,0.08) !important; border-color: rgba(0,120,80,0.2) !important; }
+body.light-mode .study-txt { color: #0f2040 !important; }
+body.light-mode .pearl-card { color: #0f2040 !important; }
+body.light-mode .diff-card { background: #f0f6ff !important; color: var(--sm-text1) !important; }
+body.light-mode .challenge-box { background: rgba(0,100,160,0.06) !important; }
+body.light-mode .patient-bubble { background: rgba(100,80,200,0.06) !important; color: var(--sm-text1) !important; }
+body.light-mode .anchor-card { background: rgba(100,80,200,0.05) !important; color: var(--sm-text1) !important; }
+body.light-mode .heat-cell { color: inherit !important; }
+body.light-mode .input-meta { color: var(--sm-text3) !important; }
+body.light-mode #char-count { color: var(--sm-text3) !important; }
+body.light-mode .layer-stepper { background: rgba(0,0,0,0.04) !important; }
+body.light-mode .layer-dot { background: #e8eef5 !important; color: var(--sm-text3) !important; border-color: rgba(20,184,166,0.3) !important; }
+body.light-mode .layer-dot.active { background: rgba(20,184,166,0.15) !important; color: var(--sm-teal) !important; }
+body.light-mode .modal-content { color: var(--sm-text1) !important; }
+body.light-mode .modal-title { color: #0f2040 !important; }
+body.light-mode .sb-footer { color: var(--sm-text3) !important; background: var(--sm-surface) !important; }
+body.light-mode .btn-new-session { background: rgba(20,184,166,0.08) !important; }
+body.light-mode .typing-dots span { background: var(--sm-teal) !important; }
+body.light-mode .qp-btn { color: var(--sm-text2) !important; border-color: rgba(20,184,166,0.3) !important; }
+body.light-mode .search-result { background: #f0f6ff !important; color: var(--sm-text1) !important; }
+body.light-mode .con-card { background: rgba(100,80,200,0.05) !important; }
 /* Theme toggle button */
 .btn-theme {
   width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
@@ -615,18 +663,25 @@ body {
   backdrop-filter: blur(10px);
 }
 .btn-attach {
-  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
-  background: rgba(20,184,166,0.06);
-  border: 1px solid var(--sm-border);
-  color: var(--sm-text3); font-size: 1rem;
+  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+  background: transparent; border: 1px solid var(--sm-border);
+  color: var(--sm-text3); font-size: 0.9rem;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.2s; align-self: flex-end;
+  cursor: pointer; transition: all 0.2s;
 }
 .btn-attach:hover { border-color: rgba(20,184,166,0.4); color: var(--sm-teal); }
-.btn-attach.has-file { border-color: rgba(20,184,166,0.5); color: var(--sm-teal); background: rgba(20,184,166,0.1); }
+.btn-attach.has-file { border-color: var(--sm-teal); color: var(--sm-teal); background: rgba(20,184,166,0.1); }
 #msg-input {
-  min-height: 38px;
-  max-height: 160px;
+  min-height: 52px; max-height: 200px;
+  border: none !important; border-radius: 0 !important;
+  padding: 8px 14px 4px !important;
+}
+.input-shell {
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+#input-zone {
+  padding: 8px 10px 10px !important;
 }
 .qp-row { display: none; } /* replaced by dropdown */
 #qp-select option { background: var(--sm-surface); color: var(--sm-text1); }
@@ -1148,60 +1203,64 @@ body {
 
       <!-- Input zone (only shown in chat tab) -->
       <div id="input-zone">
-        <!-- Input row: attach + textarea + send -->
-        <div class="d-flex gap-2 align-items-end">
-          <!-- Attach button -->
-          <button class="btn-attach" id="attach-btn" onclick="triggerAttach()" title="Attach document or image">
-            <i class="bi bi-paperclip"></i>
-          </button>
-          <input type="file" id="file-input" style="display:none"
-            accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.md"
-            onchange="handleFileAttach(this)"/>
+        <input type="file" id="file-input" style="display:none"
+          accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.md"
+          onchange="handleFileAttach(this)"/>
 
-          <div class="input-shell flex-grow-1">
-            <!-- Attachment preview badge -->
-            <div id="attach-preview" style="display:none;padding:5px 12px 0;display:none">
+        <!-- Full-width unified input shell -->
+        <div class="input-shell" style="display:flex;flex-direction:column;border-radius:16px">
+
+          <!-- TOP ROW: attachment badge + quick prompt dropdown -->
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 12px 0;min-height:0">
+            <!-- Attach preview (hidden until file attached) -->
+            <div id="attach-preview" style="display:none;flex:1">
               <span id="attach-badge" style="display:inline-flex;align-items:center;gap:5px;background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.25);border-radius:20px;padding:2px 10px;font-size:.7rem;color:var(--sm-teal)">
                 <i class="bi bi-paperclip"></i>
                 <span id="attach-name"></span>
                 <button onclick="clearAttach()" style="background:none;border:none;color:var(--sm-text3);cursor:pointer;padding:0;font-size:.75rem;line-height:1"><i class="bi bi-x"></i></button>
               </span>
             </div>
-
             <!-- Quick prompts dropdown -->
-            <div style="padding:5px 12px 0;position:relative">
-              <select id="qp-select" onchange="handleQPSelect(this)"
-                style="background:transparent;border:none;outline:none;color:var(--sm-text3);font-size:.72rem;font-family:var(--sm-sans);cursor:pointer;width:100%;-webkit-appearance:none;appearance:none">
-                <option value="">⚡ Quick prompts…</option>
-              </select>
-            </div>
-
-            <textarea id="msg-input" rows="2"
-              placeholder="Ask anything — topic, mechanism, ECG, drug, diagram, or attach a document…"
-              onkeydown="handleKey(event)" oninput="updateCC()"></textarea>
-            <div class="input-meta">
-              <span>Enter to send · Shift+Enter new line</span>
-              <span id="char-count" style="transition:color .2s">0/4000</span>
-            </div>
+            <select id="qp-select" onchange="handleQPSelect(this)"
+              style="flex:1;background:transparent;border:none;outline:none;color:var(--sm-text3);font-size:.72rem;font-family:var(--sm-sans);cursor:pointer;min-width:0;-webkit-appearance:none;appearance:none">
+              <option value="">⚡ Quick prompts…</option>
+            </select>
           </div>
 
-          <!-- Voice input button -->
-          <button class="btn-voice" id="voice-btn" onclick="toggleVoice()" title="Voice input" style="display:none">
-            <i class="bi bi-mic-fill" id="voice-icon"></i>
-          </button>
+          <!-- MIDDLE: textarea — full width, no squeezing -->
+          <textarea id="msg-input" rows="3"
+            placeholder="Ask anything — topic, mechanism, ECG, drug, diagram, or attach a document…"
+            onkeydown="handleKey(event)" oninput="updateCC()"
+            style="border-radius:0;padding:8px 14px 4px;min-height:52px"></textarea>
 
-          <!-- Export PDF button -->
-          <button class="btn-send" id="export-btn" onclick="exportToPDF()" title="Export session to PDF"
-            style="display:none;background:rgba(167,139,250,0.15);border-color:rgba(167,139,250,0.35);color:#a78bfa">
-            <i class="bi bi-file-earmark-pdf"></i>
-          </button>
+          <!-- BOTTOM ROW: left actions + char count + right actions -->
+          <div style="display:flex;align-items:center;padding:4px 10px 6px;gap:6px">
+            <!-- Left: attach + voice -->
+            <button class="btn-attach" id="attach-btn" onclick="triggerAttach()" title="Attach file">
+              <i class="bi bi-paperclip"></i>
+            </button>
+            <button class="btn-voice" id="voice-btn" onclick="toggleVoice()" title="Voice input" style="display:none">
+              <i class="bi bi-mic-fill" id="voice-icon"></i>
+            </button>
 
-          <button class="btn-send" id="send-btn" onclick="sendMessage()" disabled>
-            <i class="bi bi-arrow-up-short"></i>
-          </button>
-          <button class="btn-stop d-flex" id="stop-btn" onclick="stopStream()">
-            <i class="bi bi-stop-fill"></i>
-          </button>
+            <!-- Centre: meta info -->
+            <span style="flex:1;font-size:.58rem;color:var(--sm-text3)">Enter to send · Shift+Enter new line</span>
+            <span id="char-count" style="font-size:.58rem;color:var(--sm-text3);transition:color .2s">0/4000</span>
+
+            <!-- Right: export + stop + send -->
+            <button class="btn-send" id="export-btn" onclick="exportToPDF()" title="Export to PDF"
+              style="display:none;width:32px;height:32px;background:rgba(167,139,250,0.15);border-color:rgba(167,139,250,0.35);color:#a78bfa;font-size:.85rem">
+              <i class="bi bi-file-earmark-pdf"></i>
+            </button>
+            <button class="btn-stop" id="stop-btn" onclick="stopStream()"
+              style="width:32px;height:32px;display:none;align-items:center;justify-content:center">
+              <i class="bi bi-stop-fill"></i>
+            </button>
+            <button class="btn-send" id="send-btn" onclick="sendMessage()" disabled
+              style="width:36px;height:36px">
+              <i class="bi bi-arrow-up-short" style="font-size:1.3rem"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div><!-- /view-chat -->
@@ -2621,22 +2680,24 @@ function drawECG12Lead(id, text) {
 
   var parent   = canvas.parentElement;
   var W        = Math.max(720, (parent ? parent.offsetWidth || 720 : 720));
-  // Always render at full width for proper lead spacing
 
   // Layout: 3 rows × 4 leads + rhythm strip + header
   var HEADER_H = 52;
   var MEAS_H   = 28;
-  var LEAD_H   = 90;
+  var LEAD_H   = 95;
   var ROWS     = 3;
-  var STRIP_H  = 80;
+  var STRIP_H  = 85;
   var TOTAL_H  = HEADER_H + MEAS_H + ROWS * LEAD_H + STRIP_H + 20;
 
-  canvas.width  = W;
-  canvas.height = TOTAL_H;
-  canvas.style.width  = '100%';
+  // HIGH RESOLUTION: multiply by device pixel ratio for sharp rendering
+  var DPR = Math.min(window.devicePixelRatio || 1, 3);
+  canvas.width  = W * DPR;
+  canvas.height = TOTAL_H * DPR;
+  canvas.style.width  = W + 'px';
   canvas.style.height = TOTAL_H + 'px';
 
   var ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR); // Scale all drawing by DPR for crisp output
 
   /* ── Parse ECG text ── */
   var t    = text.toLowerCase();
@@ -2686,8 +2747,8 @@ function drawECG12Lead(id, text) {
   /* ── Draw full grid background ── */
   function drawGrid(x0, y0, w, h) {
     // Small boxes
-    ctx.strokeStyle = 'rgba(0,180,80,0.07)';
-    ctx.lineWidth   = 0.4;
+    ctx.strokeStyle = 'rgba(0,180,80,0.12)';
+    ctx.lineWidth   = 0.5;
     for (var xi = x0; xi <= x0+w; xi += smallBox) {
       ctx.beginPath(); ctx.moveTo(xi, y0); ctx.lineTo(xi, y0+h); ctx.stroke();
     }
@@ -2695,8 +2756,8 @@ function drawECG12Lead(id, text) {
       ctx.beginPath(); ctx.moveTo(x0, yi); ctx.lineTo(x0+w, yi); ctx.stroke();
     }
     // Big boxes
-    ctx.strokeStyle = 'rgba(0,210,100,0.2)';
-    ctx.lineWidth   = 0.7;
+    ctx.strokeStyle = 'rgba(0,210,100,0.28)';
+    ctx.lineWidth   = 1.0;
     for (var xb = x0; xb <= x0+w; xb += bigBox) {
       ctx.beginPath(); ctx.moveTo(xb, y0); ctx.lineTo(xb, y0+h); ctx.stroke();
     }
@@ -3846,6 +3907,65 @@ init = function() {
   }
 };
 
+
+
+/* ══ BROWSER NOTIFICATIONS ═══════════════════════════════════════ */
+function requestNotifPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    Notification.requestPermission().then(function(perm) {
+      if (perm === 'granted') {
+        showToast('🔔 Notifications enabled! You will be reminded to review cards.', 'teal');
+        scheduleSpacedRepReminder();
+      }
+    });
+  } else if (Notification.permission === 'granted') {
+    scheduleSpacedRepReminder();
+  }
+}
+
+function sendNotification(title, body, icon) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    new Notification(title, {
+      body:  body,
+      icon:  'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚕</text></svg>',
+      badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚕</text></svg>',
+      tag:   'smartmedicine-reminder',
+    });
+  } catch(e) {}
+}
+
+function scheduleSpacedRepReminder() {
+  // Check every 30 minutes if cards are due
+  setInterval(function() {
+    var due = getDueFlashcards ? getDueFlashcards() : [];
+    if (due.length > 0 && document.hidden) {
+      sendNotification(
+        'SmartMedicine — ' + due.length + ' cards due',
+        'Your spaced repetition review is ready. Tap to study.',
+      );
+    }
+  }, 30 * 60 * 1000);
+
+  // Also check immediately on load
+  setTimeout(function() {
+    var due = getDueFlashcards ? getDueFlashcards() : [];
+    if (due.length > 0) {
+      showToast('🔔 ' + due.length + ' flashcard' + (due.length > 1 ? 's' : '') + ' due for review!', 'amber');
+    }
+  }, 3000);
+}
+
+// Ask for notification permission after first session is created
+var _prevNewSession = newSession;
+newSession = async function(pre) {
+  await _prevNewSession(pre);
+  if (topics.length === 1) {
+    // First session ever — ask for notification permission
+    setTimeout(requestNotifPermission, 5000);
+  }
+};
 
 /* ══ BOOT ════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', init);
