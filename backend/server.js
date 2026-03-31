@@ -303,7 +303,7 @@ app.post('/api/chat', async (req, res) => {
           fcOps.insert({ topic_id, specialty, front, back: back.trim(), source: 'ai' });
           savedCount++;
         }
-        console.log(\`Saved \${savedCount} flashcards for topic \${topic_id}\`);
+        console.log('Saved ' + savedCount + ' flashcards for topic ' + topic_id);
       }
     }
 
