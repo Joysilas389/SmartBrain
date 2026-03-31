@@ -1978,7 +1978,6 @@ async function selectTopic(id) {
     badge.textContent = td.specialty||'General';
     badge.className = `badge rounded-pill sp-${(td.specialty||'General').replace(/ /g,'_')} flex-shrink-0`;
     document.getElementById('spec-select').value = td.specialty||'General';
-    document.getElementById('spec-select').style.display = 'block';
     document.getElementById('tab-row').style.display = 'flex';
   } catch(e) {
     messages=[]; flashcards=[]; concepts=[];
@@ -2031,7 +2030,6 @@ async function confirmDelete() {
     activeId=null; activeTopic=null; messages=[]; flashcards=[]; concepts=[];
     document.getElementById('view-chat').style.display='none';
     document.getElementById('view-landing').style.display='flex';
-    document.getElementById('spec-select').style.display='none';
     document.getElementById('tab-row').style.display='none';
     document.getElementById('topbar-title').textContent='SmartMedicine';
     document.getElementById('spec-badge').textContent='';
