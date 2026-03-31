@@ -304,6 +304,7 @@ app.post('/api/chat', async (req, res) => {
           savedCount++;
         }
         console.log('Saved ' + savedCount + ' flashcards for topic ' + topic_id);
+        if (savedCount === 0) { var hasBlock = fullText.includes('---FLASHCARDS---'); var hasFront = fullText.includes('FRONT:'); console.log('Debug: hasBlock=' + hasBlock + ' hasFront=' + hasFront + ' textLen=' + fullText.length); }
       }
     }
 

@@ -2021,7 +2021,15 @@ function renameTopic(id) {
   renderTopics();
 }
 
-function askDelete(id) { deleteTarget=id; deleteModal.show(); }
+function askDelete(id) {
+  deleteTarget=id;
+  // Close mobile sidebar first if open, then show modal
+  try {
+    var oc = bootstrap.Offcanvas.getInstance(document.getElementById('mob-sidebar'));
+    if (oc) { oc.hide(); setTimeout(function(){ deleteModal.show(); }, 350); return; }
+  } catch(e) {}
+  deleteModal.show();
+}
 async function confirmDelete() {
   deleteModal.hide();
   try { await safeFetch(`${API}/topics/${deleteTarget}`,{method:'DELETE'}); } catch(e){}
@@ -2107,8 +2115,13 @@ async function sendMessage() {
           if(d.type==='delta'){messages[messages.length-1].content+=d.text;updateLastBubble();}
           if(d.type==='error'){showToast('⚠ AI error: '+d.error,'danger');}
           if(d.type==='done'){
-            try{flashcards=await safeFetch(`${API}/flashcards/topic/${activeId}`);renderFlashcards();updateTabLabels();await loadTopics();}catch(e){}
-            // Extract pearls ONCE when full response is complete
+            try{
+              flashcards=await safeFetch(`${API}/flashcards/topic/${activeId}`);
+              renderFlashcards();
+              updateTabLabels();
+              await loadTopics();
+              if(flashcards.length>0) showToast('🃏 '+flashcards.length+' flashcards saved','teal');
+            }catch(e){}
             var finalMsg = messages[messages.length-1];
             if(finalMsg && finalMsg.role==='assistant' && finalMsg.content){
               extractAndSavePearls(finalMsg.content, activeId, activeTopic ? activeTopic.specialty : 'General');
