@@ -2678,1234 +2678,391 @@ function drawECG12Lead(id, text) {
   var canvas = document.getElementById(id);
   if (!canvas) return;
 
-  var parent   = canvas.parentElement;
-  var W        = Math.max(720, (parent ? parent.offsetWidth || 720 : 720));
+  var parent = canvas.parentElement;
+  var DPR    = Math.min(window.devicePixelRatio || 1, 3);
 
-  // Layout: 3 rows × 4 leads + rhythm strip + header
+  // ── Real clinical ECG dimensions ──
+  // Paper: 25mm/s, 10mm/mV standard
+  // Each lead strip: 10 seconds wide = 250mm
+  // We render at screen scale: 1 big box (5mm) = bigBox px
+  // ── Fixed scale matching real ECG paper ──
+  // 1mm = 4px on screen → small boxes are clearly visible (4px)
+  // 5mm big box = 20px → very clear
+  // 10s of data per column (like real 12-lead ECG paper at 25mm/s)
+  var mmPx     = 4.0;
+  var bigBox   = mmPx * 5;    // 20px
+  var smallBox = mmPx;        // 4px — CLEARLY VISIBLE
+
+  // 10 seconds at 25mm/s = 250mm per column
+  var TEN_SEC_PX = 250 * mmPx;  // 1000px per column
+  var COL_W      = TEN_SEC_PX + 30;  // +30 for cal pulse + label
+  var CONTAINER_W = COL_W * 2;       // both columns side by side
+
+  var LEAD_H   = 110;   // taller leads = more readable waveforms
+  var STRIP_H  = 100;   // rhythm strip taller for better visibility
   var HEADER_H = 52;
-  var MEAS_H   = 28;
-  var LEAD_H   = 95;
-  var ROWS     = 3;
-  var STRIP_H  = 85;
-  var TOTAL_H  = HEADER_H + MEAS_H + ROWS * LEAD_H + STRIP_H + 20;
+  var TOTAL_H  = HEADER_H + 6 * LEAD_H + 8 + STRIP_H + 20;
 
-  // HIGH RESOLUTION: multiply by device pixel ratio for sharp rendering
-  var DPR = Math.min(window.devicePixelRatio || 1, 3);
-  canvas.width  = W * DPR;
-  canvas.height = TOTAL_H * DPR;
-  canvas.style.width  = W + 'px';
+  // HiDPI canvas
+  canvas.width        = CONTAINER_W * DPR;
+  canvas.height       = TOTAL_H * DPR;
+  canvas.style.width  = CONTAINER_W + 'px';
   canvas.style.height = TOTAL_H + 'px';
+  canvas.style.display = 'block';
 
   var ctx = canvas.getContext('2d');
-  ctx.scale(DPR, DPR); // Scale all drawing by DPR for crisp output
+  ctx.scale(DPR, DPR);
 
-  /* ── Parse ECG text ── */
-  var t    = text.toLowerCase();
-  var lines = text.split('\n');
+  // ── Parse ECG text ──
+  var t = text.toLowerCase();
   function getField(key) {
     var re = new RegExp(key + '[:\\s]+([^\\n]+)', 'i');
     var m  = text.match(re);
     return m ? m[1].trim() : '';
   }
-  var rhythm   = getField('RHYTHM') || 'NORMAL SINUS RHYTHM';
-  var rate     = parseInt(getField('RATE')) || 75;
-  var prMs     = parseInt(getField('PR'))   || 160;
-  var qrsMs    = parseInt(getField('QRS'))  || 90;
-  var qtMs     = parseInt(getField('QT'))   || 400;
-  var axis     = getField('AXIS') || 'NORMAL';
-  var interp   = getField('INTERPRETATION') || '';
+  var rhythm  = getField('RHYTHM') || 'NORMAL SINUS RHYTHM';
+  var rate    = parseInt(getField('RATE'))  || 75;
+  var prMs    = parseInt(getField('PR'))    || 160;
+  var qrsMs   = parseInt(getField('QRS'))   || 90;
+  var qtMs    = parseInt(getField('QT'))    || 400;
+  var axisStr = getField('AXIS')            || 'NORMAL';
 
-  /* ── Rhythm flags ── */
-  var isSTEMI_ant  = t.indexOf('anterior') > -1 && (t.indexOf('stemi') > -1 || t.indexOf('st elev') > -1);
-  var isSTEMI_inf  = t.indexOf('inferior') > -1 && (t.indexOf('stemi') > -1 || t.indexOf('st elev') > -1);
-  var isSTEMI_lat  = t.indexOf('lateral')  > -1 && (t.indexOf('stemi') > -1 || t.indexOf('st elev') > -1);
-  var isSTEMI_any  = t.indexOf('stemi') > -1 || (t.indexOf('st elev') > -1);
-  var isSTdep      = t.indexOf('st dep') > -1 || t.indexOf('nstemi') > -1 || t.indexOf('ischemi') > -1;
-  var isTWI        = t.indexOf('t-wave inv') > -1 || t.indexOf('t wave inv') > -1;
-  var isAFib       = t.indexOf('atrial fib') > -1 || t.indexOf('a-fib') > -1 || t.indexOf('afib') > -1;
+  // ── Rhythm flags ──
+  var isSTEMI_ant  = t.indexOf('anterior') > -1 && t.indexOf('stemi') > -1;
+  var isSTEMI_inf  = t.indexOf('inferior') > -1 && t.indexOf('stemi') > -1;
+  var isSTEMI_lat  = t.indexOf('lateral')  > -1 && t.indexOf('stemi') > -1;
+  var isSTdep      = t.indexOf('nstemi') > -1 || (t.indexOf('st dep') > -1) || t.indexOf('ischaemi') > -1;
+  var isTWI        = t.indexOf('t wave inv') > -1 || t.indexOf('t-wave inv') > -1;
+  var isAFib       = t.indexOf('atrial fib') > -1 || t.indexOf('afib') > -1;
   var isAFlutter   = t.indexOf('flutter') > -1;
-  var isSVT        = t.indexOf('svt') > -1;
-  var isVtach      = t.indexOf('ventricular tach') > -1 || t.indexOf('v-tach') > -1 || t.indexOf('vtach') > -1;
-  var isVfib       = t.indexOf('ventricular fib') > -1  || t.indexOf('v-fib') > -1  || t.indexOf('vfib') > -1;
+  var isVtach      = t.indexOf('ventricular tach') > -1 || t.indexOf('vtach') > -1;
+  var isVfib       = t.indexOf('ventricular fib') > -1  || t.indexOf('vfib') > -1;
   var isFirstDeg   = t.indexOf('first degree') > -1 || t.indexOf('1st degree') > -1;
   var isWenckebach = t.indexOf('wenckebach') > -1 || t.indexOf('mobitz i') > -1;
   var isMobitzII   = t.indexOf('mobitz ii') > -1 || t.indexOf('mobitz type ii') > -1;
-  var isComplete   = t.indexOf('complete') > -1 && (t.indexOf('block') > -1);
-  var isLBBB       = t.indexOf('left bundle') > -1 || t.indexOf('lbbb') > -1;
-  var isRBBB       = t.indexOf('right bundle') > -1 || t.indexOf('rbbb') > -1;
-  var isLVH        = t.indexOf('lvh') > -1 || t.indexOf('left ventricular hypert') > -1;
+  var isComplete   = t.indexOf('complete') > -1 && t.indexOf('block') > -1;
+  var isLBBB       = t.indexOf('lbbb') > -1 || t.indexOf('left bundle') > -1;
+  var isRBBB       = t.indexOf('rbbb') > -1 || t.indexOf('right bundle') > -1;
+  var isLVH        = t.indexOf('lvh') > -1  || t.indexOf('left ventricular hypert') > -1;
+  var isWPW        = t.indexOf('wpw') > -1  || t.indexOf('wolff') > -1;
+  var isBrady      = t.indexOf('bradycardia') > -1 || rate < 60;
+  var isTachy      = (t.indexOf('tachycardia') > -1 && !isVtach) || rate > 100;
   var isLongQT     = t.indexOf('long qt') > -1 || t.indexOf('prolonged qt') > -1;
-  var isWPW        = t.indexOf('wpw') > -1 || t.indexOf('wolff') > -1;
-  var isBrady      = t.indexOf('bradycardia') > -1 || rate < 50;
-  var isTachy      = t.indexOf('tachycardia') > -1 || rate > 100;
+  var isSVT        = t.indexOf('svt') > -1;
 
-  /* ── Grid constants ── */
-  var mm      = W / 250;   // 1mm on screen
-  var bigBox  = mm * 5;    // 5mm = 0.2s
-  var smallBox= mm;        // 1mm = 0.04s
-
-  /* ── Draw full grid background ── */
+  // ── Draw grid function ──
   function drawGrid(x0, y0, w, h) {
-    // Small boxes
-    ctx.strokeStyle = 'rgba(0,180,80,0.12)';
-    ctx.lineWidth   = 0.5;
-    for (var xi = x0; xi <= x0+w; xi += smallBox) {
-      ctx.beginPath(); ctx.moveTo(xi, y0); ctx.lineTo(xi, y0+h); ctx.stroke();
+    // 1mm small boxes — clearly visible pink/red like real ECG paper
+    ctx.strokeStyle = 'rgba(220,80,80,0.22)';
+    ctx.lineWidth   = 0.6;
+    for (var xi = 0; xi <= w; xi += smallBox) {
+      ctx.beginPath(); ctx.moveTo(x0+xi, y0); ctx.lineTo(x0+xi, y0+h); ctx.stroke();
     }
-    for (var yi = y0; yi <= y0+h; yi += smallBox) {
-      ctx.beginPath(); ctx.moveTo(x0, yi); ctx.lineTo(x0+w, yi); ctx.stroke();
+    for (var yi = 0; yi <= h; yi += smallBox) {
+      ctx.beginPath(); ctx.moveTo(x0, y0+yi); ctx.lineTo(x0+w, y0+yi); ctx.stroke();
     }
-    // Big boxes
-    ctx.strokeStyle = 'rgba(0,210,100,0.28)';
-    ctx.lineWidth   = 1.0;
-    for (var xb = x0; xb <= x0+w; xb += bigBox) {
-      ctx.beginPath(); ctx.moveTo(xb, y0); ctx.lineTo(xb, y0+h); ctx.stroke();
+    // 5mm large boxes — darker red like real ECG paper
+    ctx.strokeStyle = 'rgba(220,60,60,0.45)';
+    ctx.lineWidth   = 1.1;
+    for (var xb = 0; xb <= w; xb += bigBox) {
+      ctx.beginPath(); ctx.moveTo(x0+xb, y0); ctx.lineTo(x0+xb, y0+h); ctx.stroke();
     }
-    for (var yb = y0; yb <= y0+h; yb += bigBox) {
-      ctx.beginPath(); ctx.moveTo(x0, yb); ctx.lineTo(x0+w, yb); ctx.stroke();
+    for (var yb = 0; yb <= h; yb += bigBox) {
+      ctx.beginPath(); ctx.moveTo(x0, y0+yb); ctx.lineTo(x0+w, y0+yb); ctx.stroke();
     }
   }
 
-  /* ── Background ── */
+  // ── Background ──
+  // Background — dark clinical green (like real ECG paper reverse-colour)
   ctx.fillStyle = '#040e08';
-  ctx.fillRect(0, 0, W, TOTAL_H);
+  ctx.fillRect(0, 0, CONTAINER_W, TOTAL_H);
+  // Subtle column separator
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  ctx.fillRect(COL_W, 0, 1, TOTAL_H);
 
-  /* ── Draw grid for entire canvas ── */
-  drawGrid(0, HEADER_H + MEAS_H, W, ROWS * LEAD_H + STRIP_H + 8);
+  // ── Header ──
+  ctx.fillStyle = '#00c864';
+  ctx.font = 'bold 12px "JetBrains Mono", monospace';
+  ctx.fillText(rhythm.toUpperCase(), 10, 16);
+  ctx.fillStyle = 'rgba(0,200,100,0.55)';
+  ctx.font = '9px "JetBrains Mono", monospace';
+  ctx.fillText(
+    'HR: ' + rate + ' bpm   PR: ' + prMs + 'ms   QRS: ' + qrsMs + 'ms   QT: ' + qtMs + 'ms   AXIS: ' + axisStr +
+    '   25mm/s  10mm/mV',
+    10, 30
+  );
+  // Column separator
+  ctx.strokeStyle = 'rgba(0,200,100,0.18)';
+  ctx.lineWidth = 0.8;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(COL_W, HEADER_H); ctx.lineTo(COL_W, HEADER_H + 6*LEAD_H); ctx.stroke();
+  ctx.setLineDash([]);
 
-  /* ── Header ── */
-  ctx.fillStyle = '#00e676';
-  ctx.font      = 'bold 13px "JetBrains Mono", monospace';
-  ctx.fillText(rhythm.toUpperCase(), 10, 20);
+  // ── Lead amplitudes ──
+  // Lead-specific amplitudes (mm units) — realistic values
+  var AMP = {
+    'I':   { p:1.3, r:7,   q:-0.6, s:-1.5, t:2.5,  stBase:0 },
+    'II':  { p:2.0, r:9,   q:-0.8, s:-1.5, t:3.0,  stBase:0 },
+    'III': { p:0.8, r:5,   q:-0.3, s:-2.5, t:1.5,  stBase:0 },
+    'aVR': { p:-1.5,r:-7,  q:0.5,  s:2.5,  t:-2.5, stBase:0 },
+    'aVL': { p:0.5, r:4,   q:-0.3, s:-1.0, t:1.5,  stBase:0 },
+    'aVF': { p:1.5, r:6,   q:-0.5, s:-2.0, t:2.0,  stBase:0 },
+    'V1':  { p:-0.5,r:1.5, q:-0.5, s:-9,   t:-1.5, stBase:0 },
+    'V2':  { p:-0.3,r:3,   q:-1.0, s:-10,  t:2.5,  stBase:0 },
+    'V3':  { p:0.3, r:6,   q:-1.0, s:-6,   t:3.5,  stBase:0 },
+    'V4':  { p:1.0, r:10,  q:-0.8, s:-3,   t:4.0,  stBase:0 },
+    'V5':  { p:1.2, r:11,  q:-0.7, s:-2,   t:4.0,  stBase:0 },
+    'V6':  { p:1.4, r:9,   q:-0.5, s:-1,   t:3.5,  stBase:0 },
+  };
 
-  ctx.fillStyle = 'rgba(0,200,100,0.6)';
-  ctx.font      = '10px "JetBrains Mono", monospace';
-  var measLine = 'HR: ' + rate + ' bpm   PR: ' + prMs + 'ms   QRS: ' + qrsMs + 'ms   QT: ' + qtMs + 'ms   AXIS: ' + axis;
-  ctx.fillText(measLine, 10, 36);
-
-  ctx.fillStyle = 'rgba(100,200,255,0.5)';
-  ctx.font      = '9px "JetBrains Mono", monospace';
-  ctx.fillText('25mm/s   10mm/mV   Standard 12-Lead ECG', 10, 50);
-
-  /* ── Waveform builder ──
-     Returns array of {t, v} points for one beat cycle
-     t = time in mm units, v = voltage in mm units (positive = up = negative y)
-  ── */
-  function buildBeat(lead, beatIdx) {
-    var pts = [];
-    var PR  = prMs * mm / 40;   // convert ms to canvas units (1mm = 0.04s)
-    var QRS = qrsMs * mm / 40;
-    var QT  = qtMs  * mm / 40;
-    var RR  = 60000 / rate * mm / 40;
-
-    // Lead-specific amplitudes
-    var pAmp   = 0, rAmp = 0, qAmp = 0, sAmp = 0, tAmp = 0, stShift = 0;
-    var pDur   = mm * 2.5, qrsDur = QRS, tDur = mm * 4;
-
-    // Base amplitudes by lead
-    var leadAmps = {
-      'I':   { p:1.2, r:6, q:-0.5, s:-1, t:2.5 },
-      'II':  { p:1.8, r:8, q:-0.8, s:-1.5, t:3 },
-      'III': { p:0.8, r:4, q:-0.3, s:-2, t:1.5 },
-      'aVR': { p:-1.2, r:-6, q:0.5, s:2, t:-2.5 },
-      'aVL': { p:0.6, r:3, q:-0.3, s:-0.8, t:1.5 },
-      'aVF': { p:1.5, r:6, q:-0.5, s:-2, t:2 },
-      'V1':  { p:-0.5, r:1.5, q:-0.5, s:-8, t:-1.5 },
-      'V2':  { p:-0.3, r:3, q:-1, s:-9, t:2 },
-      'V3':  { p:0.3, r:5, q:-1, s:-6, t:3 },
-      'V4':  { p:1, r:9, q:-0.8, s:-3, t:4 },
-      'V5':  { p:1.2, r:10, q:-0.7, s:-2, t:4 },
-      'V6':  { p:1.4, r:8, q:-0.5, s:-1, t:3.5 },
-    };
-    var amp = leadAmps[lead] || leadAmps['II'];
-    pAmp = amp.p * mm; rAmp = amp.r * mm; qAmp = amp.q * mm; sAmp = amp.s * mm; tAmp = amp.t * mm;
-
-    // Pathology modifications
+  // Apply pathology
+  ['I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','V6'].forEach(function(ld) {
+    var a = AMP[ld];
     if (isSTEMI_ant) {
-      if (['V1','V2','V3','V4'].indexOf(lead) > -1) { stShift = mm * 3; tAmp = mm * 5; }
-      if (['I','aVL'].indexOf(lead) > -1)            { stShift = mm * 2; }
-      if (['II','III','aVF'].indexOf(lead) > -1)     { stShift = -mm * 1.5; tAmp = -mm * 2; } // reciprocal
+      if (['V1','V2','V3','V4'].indexOf(ld) > -1) { a.stBase = 3.5; a.t = 5; }
+      if (['I','aVL'].indexOf(ld) > -1)            { a.stBase = 2; }
+      if (['II','III','aVF'].indexOf(ld) > -1)     { a.stBase = -1.5; a.t = -2; }  // reciprocal
     }
     if (isSTEMI_inf) {
-      if (['II','III','aVF'].indexOf(lead) > -1)     { stShift = mm * 3; tAmp = mm * 4; }
-      if (['I','aVL'].indexOf(lead) > -1)            { stShift = -mm * 1.5; } // reciprocal
-      if (['V1','V2'].indexOf(lead) > -1)            { stShift = -mm * 1; }
+      if (['II','III','aVF'].indexOf(ld) > -1) { a.stBase = 3.5; a.t = 4; }
+      if (['I','aVL'].indexOf(ld) > -1)        { a.stBase = -1.5; }
+      if (['V1','V2'].indexOf(ld) > -1)        { a.stBase = -1; }
     }
     if (isSTEMI_lat) {
-      if (['I','aVL','V5','V6'].indexOf(lead) > -1)  { stShift = mm * 3; tAmp = mm * 4; }
-      if (['V1','V2','V3'].indexOf(lead) > -1)       { stShift = -mm * 1; }
+      if (['I','aVL','V5','V6'].indexOf(ld) > -1) { a.stBase = 3.5; a.t = 4; }
+      if (['V1','V2','V3'].indexOf(ld) > -1)      { a.stBase = -1; }
     }
-    if (isSTdep) {
-      stShift = -mm * (lead === 'aVR' ? -1 : 1.5);
-      tAmp    *= 0.3;
-    }
-    if (isTWI) {
-      tAmp = -Math.abs(tAmp);
-    }
+    if (isSTdep)  { a.stBase = (['aVR'].indexOf(ld) > -1 ? 1 : -1.5); a.t *= 0.3; }
+    if (isTWI)    { a.t = -Math.abs(a.t); }
     if (isLBBB) {
-      if (['V5','V6','I','aVL'].indexOf(lead) > -1)  { rAmp *= 1.8; qAmp = 0; sAmp *= 0.2; }
-      if (['V1','V2'].indexOf(lead) > -1)            { rAmp = mm * 0.5; sAmp = -mm * 12; qAmp = 0; }
-      qrsDur = mm * 6;
+      if (['V5','V6','I','aVL'].indexOf(ld) > -1) { a.r *= 1.9; a.q = 0; a.s *= 0.1; }
+      if (['V1','V2'].indexOf(ld) > -1)           { a.r = 0.5; a.s = -12; a.q = 0; }
     }
     if (isRBBB) {
-      if (['V1','V2'].indexOf(lead) > -1)            { rAmp *= 0.6; sAmp = -mm * 2; tAmp = -mm * 2; }
-      if (['V5','V6','I'].indexOf(lead) > -1)        { sAmp = -mm * 4; }
-      qrsDur = mm * 6;
+      if (['V1','V2'].indexOf(ld) > -1) { a.t = -2; a.s = -2; }
+      if (['V5','V6','I'].indexOf(ld) > -1) { a.s = -4; }
     }
     if (isLVH) {
-      if (['V5','V6'].indexOf(lead) > -1)            { rAmp = mm * 16; }
-      if (['V1','V2'].indexOf(lead) > -1)            { sAmp = -mm * 14; }
+      if (['V5','V6'].indexOf(ld) > -1) { a.r = 18; }
+      if (['V1','V2'].indexOf(ld) > -1) { a.s = -15; }
     }
-    if (isLongQT || isWPW) {
-      QT = mm * 12;
-    }
-    if (isWPW) {
-      PR = mm * 2;   // short PR
-      qrsDur = mm * 5; // wide QRS
-      qAmp   = mm * 3; // delta wave
-    }
-    if (isFirstDeg) {
-      PR = Math.max(PR, mm * 8); // >200ms
-    }
-    if (isWenckebach) {
-      PR = mm * (5 + beatIdx * 1.8);
-    }
+    if (isWPW) { a.q = 3; } // delta wave
+  });
 
-    var cursor = 0;
-    // Flat lead-in
-    pts.push({t:cursor, v:0}); cursor += mm * 3;
+  // ── Build one full beat waveform ──
+  function buildBeat(lead, beatIdx, RR_px) {
+    var a    = AMP[lead] || AMP['II'];
+    var PR   = prMs  * mmPx / 40;
+    var QRS  = qrsMs * mmPx / 40;
+    var QT   = qtMs  * mmPx / 40;
+    if (isLBBB || isRBBB)    QRS = Math.max(QRS, 6 * mmPx);
+    if (isFirstDeg)          PR  = Math.max(PR,  8 * mmPx);
+    if (isWenckebach)        PR  = mmPx * (4 + beatIdx * 2.2);
+    if (isWPW)               PR  = Math.min(PR, 2.5 * mmPx);
 
-    if (isAFib) {
-      // Irregular fibrillatory baseline
-      for (var fi = 0; fi < PR; fi += mm * 0.5) {
-        pts.push({t:cursor + fi, v:(Math.random()-0.5)*mm*1.2});
-      }
-      cursor += PR;
-    } else if (isVfib) {
-      // Completely chaotic
-      for (var vi = 0; vi < RR * 0.9; vi += mm * 0.4) {
-        pts.push({t:cursor + vi, v:(Math.random()-0.5)*rAmp*0.8});
+    var pts = [];
+    var cur = 0;
+    // Flat lead-in (isoelectric)
+    pts.push({x:cur, y:0}); cur += mmPx * 2;
+
+    if (isVfib) {
+      for (var fi = 0; fi < RR_px - cur; fi += mmPx * 0.4) {
+        pts.push({x:cur+fi, y:(Math.random()-0.5) * a.r * mmPx * 0.8});
       }
       return pts;
-    } else {
-      // P wave
-      var dropped = (isMobitzII && beatIdx % 4 === 3) || (isWenckebach && beatIdx % 4 === 3) || (isComplete && beatIdx % 3 === 2);
-      if (!dropped) {
-        for (var pi = 0; pi <= pDur; pi += mm*0.3) {
-          pts.push({t:cursor + pi, v:pAmp * Math.sin(Math.PI * pi / pDur) * (isAFlutter ? 1.8 : 1)});
-        }
-        cursor += pDur;
-        if (isAFlutter) {
-          // Add flutter wave
-          for (var fli = 0; fli < mm*2; fli += mm*0.3) {
-            pts.push({t:cursor+fli, v:-pAmp*0.8*Math.sin(Math.PI*fli/(mm*2))});
-          }
-          cursor += mm*2;
-        }
-        // PR segment
-        pts.push({t:cursor, v:0}); cursor += PR - pDur - mm;
-        pts.push({t:cursor, v:0});
-      } else {
-        // Dropped beat — flat line, no QRS
-        pts.push({t:cursor + PR + qrsDur + QT - QRS, v:0});
-        return pts;
-      }
     }
 
     if (isVtach) {
-      // Wide bizarre QRS
-      pts.push({t:cursor, v:0});
-      pts.push({t:cursor + qrsDur*0.15, v:rAmp*1.4});
-      pts.push({t:cursor + qrsDur*0.45, v:-rAmp*0.5});
-      pts.push({t:cursor + qrsDur*0.65, v:rAmp*0.3});
-      pts.push({t:cursor + qrsDur, v:0});
-      cursor += qrsDur;
-    } else {
-      // Q wave (delta wave if WPW)
-      if (isWPW) {
-        for (var di = 0; di <= mm*2; di += mm*0.3) {
-          pts.push({t:cursor+di, v:di/2});
-        }
-        cursor += mm*2;
-      } else {
-        pts.push({t:cursor, v:0});
-        pts.push({t:cursor + qrsDur*0.12, v:qAmp});
-        cursor += qrsDur*0.12;
-      }
-      // R wave
-      pts.push({t:cursor + qrsDur*0.18, v:rAmp});
-      // S wave
-      pts.push({t:cursor + qrsDur*0.35, v:sAmp});
-      // Return to baseline
-      pts.push({t:cursor + qrsDur*0.55, v: stShift});
-      cursor += qrsDur;
+      pts.push({x:cur,             y:0});
+      pts.push({x:cur+QRS*0.15,   y: a.r * mmPx * 1.3});
+      pts.push({x:cur+QRS*0.5,    y:-a.r * mmPx * 0.5});
+      pts.push({x:cur+QRS*0.75,   y: a.r * mmPx * 0.2});
+      pts.push({x:cur+QRS,        y:0});
+      return pts;
     }
+
+    // Dropped beat check
+    var dropped = (isMobitzII   && beatIdx % 4 === 3) ||
+                  (isWenckebach && beatIdx % 4 === 3) ||
+                  (isComplete   && beatIdx % 3 === 2);
+
+    if (isAFib) {
+      // Fibrillatory baseline instead of P wave
+      for (var af = 0; af < PR; af += mmPx * 0.4) {
+        pts.push({x:cur+af, y:(Math.random()-0.5)*mmPx*1.2});
+      }
+      cur += PR;
+    } else if (!dropped) {
+      // P wave — smooth sinusoidal bump
+      var pDur = mmPx * 2.5 * (isAFlutter ? 0.6 : 1);
+      var pAmp = a.p * mmPx;
+      for (var pi = 0; pi <= pDur; pi += mmPx*0.25) {
+        pts.push({x:cur+pi, y: -pAmp * Math.sin(Math.PI * pi / pDur)});
+      }
+      cur += pDur;
+      if (isAFlutter) {
+        // Saw-tooth flutter wave
+        for (var fli = 0; fli < mmPx*2; fli += mmPx*0.3) {
+          pts.push({x:cur+fli, y: pAmp*0.7*(1 - fli/(mmPx*2))});
+        }
+        cur += mmPx*2;
+      }
+      // PR segment — back to baseline
+      pts.push({x:cur, y:0}); cur += (PR - pDur - mmPx*0.5);
+      pts.push({x:cur, y:0});
+    } else {
+      // Dropped beat — just flat
+      pts.push({x: cur + PR, y:0});
+      return pts;
+    }
+
+    // QRS complex
+    var stShift = -a.stBase * mmPx;  // negative y = upward on canvas
+    if (isWPW) {
+      // Delta wave — slurred upstroke
+      for (var di=0; di <= mmPx*2; di += mmPx*0.3) {
+        pts.push({x:cur+di, y:-a.q*mmPx*(di/(mmPx*2))});
+      }
+      cur += mmPx*2;
+    } else {
+      // Q wave
+      pts.push({x:cur, y:0});
+      pts.push({x:cur + QRS*0.1, y: -a.q * mmPx});
+      cur += QRS*0.1;
+    }
+    // R wave — tall spike
+    pts.push({x:cur + QRS*0.2,  y: -a.r * mmPx});
+    // S wave
+    pts.push({x:cur + QRS*0.38, y: -a.s * mmPx});
+    // Return to ST baseline
+    pts.push({x:cur + QRS*0.6,  y: stShift});
+    cur += QRS;
 
     // ST segment
-    var stDur = mm * 3;
-    pts.push({t:cursor, v:stShift});
-    pts.push({t:cursor + stDur, v:stShift});
-    cursor += stDur;
+    var stDur = mmPx * 3;
+    pts.push({x:cur,       y: stShift});
+    pts.push({x:cur+stDur, y: stShift});
+    cur += stDur;
 
     // T wave
-    var tDurActual = QT - QRS - stDur;
-    if (tDurActual < mm*2) tDurActual = mm*4;
-    for (var ti = 0; ti <= tDurActual; ti += mm*0.4) {
-      pts.push({t:cursor + ti, v:stShift + tAmp * Math.sin(Math.PI * ti / tDurActual)});
+    var tDur = Math.max(QT - QRS - stDur, mmPx*3.5);
+    var tAmp = -a.t * mmPx;
+    for (var ti=0; ti<=tDur; ti+=mmPx*0.35) {
+      pts.push({x:cur+ti, y: stShift + tAmp * Math.sin(Math.PI * ti / tDur)});
     }
-    cursor += tDurActual;
+    cur += tDur;
 
-    // Flat end
-    pts.push({t:cursor + mm*2, v:0});
-
+    // Return to baseline
+    pts.push({x:cur + mmPx, y:0});
     return pts;
   }
 
-  /* ── Draw calibration pulse ── */
-  function drawCalPulse(x, y, amplitude) {
+  // ── Draw one lead strip ──
+  function drawLead(label, x0, y0, w, h, color) {
+    var baseline = y0 + h * 0.52;
+    var ampScale = (h * 0.38) / (10 * mmPx);  // scale so 10mm = 38% of lead height (taller leads)
+
+    // Grid
+    drawGrid(x0, y0, w, h);
+
+    // Divider line between columns (only draw bottom border)
+    ctx.strokeStyle = 'rgba(0,200,100,0.12)';
+    ctx.lineWidth   = 0.6;
+    ctx.beginPath(); ctx.moveTo(x0, y0+h); ctx.lineTo(x0+w, y0+h); ctx.stroke();
+
+    // Baseline dashes
+    ctx.strokeStyle = 'rgba(0,200,100,0.1)';
+    ctx.lineWidth   = 0.5;
+    ctx.setLineDash([4,6]);
+    ctx.beginPath(); ctx.moveTo(x0, baseline); ctx.lineTo(x0+w, baseline); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Calibration pulse (1mV = 10mm square wave) at start
+    var calW = bigBox * 0.8;
+    var calH = 10 * mmPx * ampScale;
     ctx.strokeStyle = 'rgba(245,158,11,0.8)';
     ctx.lineWidth   = 1.5;
     ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x, y - amplitude * 10); // 10mm = 1mV
-    ctx.lineTo(x + bigBox, y - amplitude * 10);
-    ctx.lineTo(x + bigBox, y);
+    ctx.moveTo(x0+4, baseline);
+    ctx.lineTo(x0+4, baseline - calH);
+    ctx.lineTo(x0+4+calW, baseline - calH);
+    ctx.lineTo(x0+4+calW, baseline);
     ctx.stroke();
-  }
-
-  /* ── Draw a lead waveform ── */
-  function drawLead(label, x, y, w, amplitude, beatColor) {
-    var baseline = y + LEAD_H * 0.52;
-    var beatW    = w;
-    var numBeats = Math.ceil(beatW / (60000 / rate * mm / 40)) + 2;
 
     // Lead label
-    ctx.fillStyle = 'rgba(0,200,100,0.75)';
+    ctx.fillStyle = color || '#00e676';
     ctx.font      = 'bold 10px "JetBrains Mono", monospace';
-    ctx.fillText(label, x + 3, baseline - LEAD_H * 0.38);
+    ctx.fillText(label, x0 + 6, y0 + 13);
 
-    // Baseline
-    ctx.strokeStyle = 'rgba(0,180,80,0.12)';
-    ctx.lineWidth   = 0.5;
-    ctx.setLineDash([3,3]);
-    ctx.beginPath(); ctx.moveTo(x, baseline); ctx.lineTo(x+w, baseline); ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Clipping region
+    // Draw waveform trace — clip to this lead's region
     ctx.save();
     ctx.beginPath();
-    ctx.rect(x, y, w, LEAD_H);
+    ctx.rect(x0 + calW + 8, y0, w - calW - 10, h);
     ctx.clip();
 
-    // Draw trace
-    ctx.strokeStyle = beatColor || '#00e676';
-    ctx.lineWidth   = 1.8;
-    ctx.shadowColor = 'rgba(0,230,100,0.35)';
-    ctx.shadowBlur  = 3;
+    ctx.strokeStyle = color || '#00e676';
+    ctx.lineWidth   = 2.0;
+    ctx.shadowColor = (color || '#00e676').replace(')', ',0.4)').replace('rgb','rgba');
+    ctx.shadowBlur  = 4;
     ctx.lineJoin    = 'round';
     ctx.lineCap     = 'round';
     ctx.beginPath();
 
-    var cx2 = x, firstPt = true;
-    var RR   = 60000 / rate * mm / 40;
+    var RR_px  = (60000 / rate) * mmPx / 40;
+    var startX = x0 + calW + 10;
+    var curX   = startX;
+    var first  = true;
+    var beatIdx = 0;
 
-    for (var bi = 0; bi < numBeats + 1; bi++) {
-      var beatPts = buildBeat(label, bi);
-      for (var pi = 0; pi < beatPts.length; pi++) {
-        var px2 = cx2 + beatPts[pi].t;
-        var py2 = baseline - beatPts[pi].v * amplitude;
-        if (px2 > x + w + mm * 5) break;
-        if (firstPt) { ctx.moveTo(px2, py2); firstPt = false; }
+    while (curX < x0 + w - 5) {
+      var pts = buildBeat(label, beatIdx, RR_px);
+      for (var pi=0; pi<pts.length; pi++) {
+        var px2 = curX + pts[pi].x;
+        var py2 = baseline + pts[pi].y * ampScale;
+        if (px2 > x0+w) break;
+        if (first) { ctx.moveTo(px2, py2); first=false; }
         else ctx.lineTo(px2, py2);
       }
-      cx2 += RR;
-      if (cx2 > x + w) break;
+      curX += RR_px;
+      beatIdx++;
     }
+
     ctx.stroke();
     ctx.shadowBlur = 0;
     ctx.restore();
   }
 
-  /* ── Layout: 3 rows × 4 leads ── */
-  var LEADS_LAYOUT = [
-    ['I',   'aVR', 'V1', 'V4'],
-    ['II',  'aVL', 'V2', 'V5'],
-    ['III', 'aVF', 'V3', 'V6'],
-  ];
-  var LEAD_COLORS = {
+  // ── Lead colours ──
+  var COLORS = {
     'I':'#00e676','II':'#00e676','III':'#00e676',
     'aVR':'#f87171','aVL':'#f87171','aVF':'#f87171',
     'V1':'#7dd3fc','V2':'#7dd3fc','V3':'#7dd3fc',
-    'V4':'#a78bfa','V5':'#a78bfa','V6':'#a78bfa',
+    'V4':'#c084fc','V5':'#c084fc','V6':'#c084fc',
   };
 
-  var colW    = Math.floor(W / 4);
-  var yStart  = HEADER_H + MEAS_H;
-  var ampMult = LEAD_H / (mm * 22); // scale amplitude to fit lead height
+  // ── Draw all 12 leads ──
+  // LEFT column: I, II, III, aVR, aVL, aVF
+  var leftLeads  = ['I','II','III','aVR','aVL','aVF'];
+  var rightLeads = ['V1','V2','V3','V4','V5','V6'];
 
-  // Draw calibration pulse top-left
-  drawCalPulse(4, yStart + LEAD_H * 0.52, ampMult);
-  ctx.fillStyle = 'rgba(245,158,11,0.55)';
+  for (var i=0; i<6; i++) {
+    drawLead(leftLeads[i],  0,     HEADER_H + i*LEAD_H, COL_W,   LEAD_H, COLORS[leftLeads[i]]);
+    drawLead(rightLeads[i], COL_W, HEADER_H + i*LEAD_H, COL_W,   LEAD_H, COLORS[rightLeads[i]]);
+  }
+
+  // ── Rhythm strip: Lead II full width ──
+  var stripY = HEADER_H + 6*LEAD_H + 6;
+  // Highlight rhythm strip with subtle background
+  ctx.fillStyle = 'rgba(0,200,100,0.05)';
+  ctx.fillRect(0, stripY, CONTAINER_W, STRIP_H);
+  drawLead('II (Rhythm Strip)', 0, stripY, CONTAINER_W, STRIP_H, '#00e676');
+
+  // ── Bottom measurements bar ──
+  ctx.fillStyle = 'rgba(0,180,80,0.35)';
   ctx.font      = '8px "JetBrains Mono", monospace';
-  ctx.fillText('1mV', 4, yStart + LEAD_H * 0.52 - ampMult * 10 - 3);
-
-  // Draw 3×4 leads
-  for (var row = 0; row < 3; row++) {
-    for (var col = 0; col < 4; col++) {
-      var leadName = LEADS_LAYOUT[row][col];
-      var lx = col * colW;
-      var ly = yStart + row * LEAD_H;
-      drawLead(leadName, lx, ly, colW, ampMult, LEAD_COLORS[leadName]);
-    }
-  }
-
-  // Divider lines between columns
-  ctx.strokeStyle = 'rgba(0,180,80,0.15)';
-  ctx.lineWidth   = 0.8;
-  ctx.setLineDash([2,4]);
-  for (var dc = 1; dc < 4; dc++) {
-    ctx.beginPath();
-    ctx.moveTo(dc * colW, yStart);
-    ctx.lineTo(dc * colW, yStart + ROWS * LEAD_H);
-    ctx.stroke();
-  }
-  ctx.setLineDash([]);
-
-  // Rhythm strip (Lead II full width)
-  var stripY = yStart + ROWS * LEAD_H + 6;
-  ctx.fillStyle = 'rgba(0,200,100,0.18)';
-  ctx.fillRect(0, stripY - 2, W, STRIP_H + 4);
-  drawLead('II', 0, stripY, W, ampMult * 1.1, '#00e676');
-
-  // Rhythm strip label
-  ctx.fillStyle = 'rgba(0,200,100,0.55)';
-  ctx.font      = '9px "JetBrains Mono", monospace';
-  ctx.fillText('RHYTHM STRIP — Lead II (full length)', 8, stripY + STRIP_H - 6);
-
-  // Bottom: interpretation snippet
-  if (interp) {
-    var snippet = interp.slice(0, 120) + (interp.length > 120 ? '…' : '');
-    ctx.fillStyle = 'rgba(0,200,100,0.4)';
-    ctx.font      = '9px "JetBrains Mono", monospace';
-    ctx.fillText('INTERP: ' + snippet, 8, TOTAL_H - 5);
-  }
+  var bY = stripY + STRIP_H + 10;
+  ctx.fillText('0.67-100Hz  AC50  25mm/s  10mm/mV  SmartMedicine ECG  ' + new Date().toLocaleDateString(), 10, bY);
 }
-
-
-
-/* ══ FIX: BUILD QP DROPDOWN (replaces pill row) ═══════════════════ */
-function buildQPRow() {
-  var sel = document.getElementById('qp-select');
-  if (!sel) return;
-  var QPS_DATA = [
-    {i:'🫀', l:'First Principles',   p:'Teach from absolute first principles (Layer 0 to 5): '},
-    {i:'📊', l:'Flowchart',          p:'Draw a detailed mermaid flowchart for the mechanism of: '},
-    {i:'⚡', l:'ECG',               p:'Draw a full 12-lead ECG and teach the mechanism of: '},
-    {i:'🔬', l:'Compare',           p:'Compare and find the exact divergence step between: '},
-    {i:'💊', l:'Drug Mechanism',     p:'Step-by-step drug mechanism from receptor to clinical effect: '},
-    {i:'🃏', l:'Generate Flashcards',p:'Generate 8 mechanistic flashcards on: '},
-    {i:'🩺', l:'Ward Round',         p:'Walk me into the ward — patient presents with: '},
-    {i:'🧬', l:'Basic Science',      p:'Explain from basic science first principles: '},
-    {i:'📋', l:'USMLE Vignette',     p:'Create a USMLE vignette question testing: '},
-    {i:'🔗', l:'Connect Concepts',   p:'Connect and show all relationships between: '},
-  ];
-  sel.innerHTML = '<option value="">⚡ Quick prompts…</option>';
-  QPS_DATA.forEach(function(q) {
-    var opt = document.createElement('option');
-    opt.value = q.p;
-    opt.textContent = q.i + ' ' + q.l;
-    sel.appendChild(opt);
-  });
-}
-
-function handleQPSelect(sel) {
-  if (!sel.value) return;
-  injectPrompt(sel.value);
-  sel.value = '';
-  document.getElementById('msg-input').focus();
-}
-
-/* ══ FIX 4: FILE ATTACHMENT ════════════════════════════════════════ */
-var attachedFile   = null;   // { name, type, dataUrl, text }
-var attachedStored = null;   // persists across tab switches
-
-function triggerAttach() {
-  document.getElementById('file-input').click();
-}
-
-function handleFileAttach(input) {
-  var file = input.files[0];
-  if (!file) return;
-  var allowed = ['image/png','image/jpeg','image/gif','image/webp',
-                 'application/pdf','text/plain','text/markdown'];
-  var ext = file.name.split('.').pop().toLowerCase();
-  if (!allowed.includes(file.type) && !['txt','md','pdf'].includes(ext)) {
-    showToast('Unsupported file type. Use: PDF, PNG, JPG, GIF, TXT', 'danger');
-    return;
-  }
-
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    attachedFile = {
-      name:    file.name,
-      type:    file.type || 'text/plain',
-      size:    file.size,
-      dataUrl: e.target.result,
-    };
-    attachedStored = attachedFile; // persist across tab switches
-
-    // Show preview badge
-    var preview = document.getElementById('attach-preview');
-    var badge   = document.getElementById('attach-name');
-    if (preview) preview.style.display = 'block';
-    if (badge)   badge.textContent = file.name.length > 28 ? file.name.slice(0,25) + '…' : file.name;
-    document.getElementById('attach-btn').classList.add('has-file');
-    showToast('📎 ' + file.name + ' attached', 'teal');
-
-    // Auto-suggest prompt if input is empty
-    var inp = document.getElementById('msg-input');
-    if (inp && !inp.value.trim()) {
-      var isPDF   = file.type === 'application/pdf' || ext === 'pdf';
-      var isImage = file.type.startsWith('image/');
-      if (isPDF || ext === 'txt' || ext === 'md') {
-        inp.value = 'Explain this document from first principles using the Agbesi method. Identify all key concepts, mechanisms, and clinical pearls. Build layer by layer — do not summarise.';
-      } else if (isImage) {
-        inp.value = 'Analyse this image and explain everything you see from first principles. If it is an ECG or medical image, give a full systematic interpretation.';
-      }
-      updateCC();
-    }
-  };
-
-  // Read as data URL for images, text for text files
-  var isText = ['text/plain','text/markdown'].includes(file.type) || ['txt','md'].includes(ext);
-  if (isText) reader.readAsText(file);
-  else reader.readAsDataURL(file);
-}
-
-function clearAttach() {
-  attachedFile   = null;
-  attachedStored = null;
-  var preview = document.getElementById('attach-preview');
-  if (preview) preview.style.display = 'none';
-  document.getElementById('attach-btn').classList.remove('has-file');
-  var fi = document.getElementById('file-input');
-  if (fi) fi.value = '';
-  showToast('Attachment removed', 'amber');
-}
-
-// Restore attachment when switching back to chat tab
-function restoreAttachment() {
-  if (attachedStored && !attachedFile) {
-    attachedFile = attachedStored;
-    var preview = document.getElementById('attach-preview');
-    var badge   = document.getElementById('attach-name');
-    if (preview) preview.style.display = 'block';
-    if (badge)   badge.textContent = attachedFile.name.length > 28 ? attachedFile.name.slice(0,25) + '…' : attachedFile.name;
-    document.getElementById('attach-btn').classList.add('has-file');
-  }
-}
-
-/* ══ FIX 5: PDF EXPORT ══════════════════════════════════════════════ */
-async function exportToPDF() {
-  if (!messages || messages.length === 0) {
-    showToast('No content to export', 'amber');
-    return;
-  }
-
-  showToast('⏳ Preparing PDF export…', 'teal');
-
-  // Load jsPDF dynamically
-  if (!window.jsPDF) {
-    var script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-    document.head.appendChild(script);
-    await new Promise(function(res) { script.onload = res; });
-  }
-
-  var doc = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  var pageW  = 210, pageH = 297, margin = 15;
-  var usableW = pageW - margin * 2;
-  var y = margin;
-
-  function addPage() { doc.addPage(); y = margin; }
-  function checkPage(needed) { if (y + needed > pageH - margin) addPage(); }
-
-  // ── Header ──
-  doc.setFillColor(5, 15, 26);
-  doc.rect(0, 0, pageW, 22, 'F');
-  doc.setTextColor(20, 184, 166);
-  doc.setFontSize(16); doc.setFont('helvetica','bold');
-  doc.text('SmartMedicine', margin, 13);
-  doc.setFontSize(8); doc.setFont('helvetica','normal');
-  doc.setTextColor(100, 150, 200);
-  var topic = (activeTopic && activeTopic.title) ? activeTopic.title : 'Learning Session';
-  var spec  = (activeTopic && activeTopic.specialty) ? activeTopic.specialty : 'General';
-  doc.text(topic + '  ·  ' + spec + '  ·  Dr. Agbesi  ·  ' + new Date().toLocaleDateString(), margin, 20);
-  y = 32;
-
-  // ── Messages ──
-  messages.forEach(function(msg) {
-    if (!msg.content || msg.content.length < 5) return;
-    var clean = msg.content
-      .replace(/---FLASHCARDS---[\s\S]*?---END-FLASHCARDS---/g, '')
-      .replace(/```[a-z]*/g, '')
-      .replace(/```/g, '')
-      .replace(/[★⭐]/g, '* PEARL:')
-      .replace(/🇬🇭/g, '[GHANA]')
-      .replace(/📚/g, '[REF]')
-      .replace(/📋/g, '[CHECK]')
-      .replace(/[^\x00-\x7E]/g, function(c) {
-        // Keep common unicode, replace others
-        return c;
-      })
-      .trim();
-
-    checkPage(14);
-
-    if (msg.role === 'user') {
-      // User bubble
-      doc.setFillColor(0, 60, 40);
-      doc.setTextColor(180, 240, 200);
-      doc.setFontSize(9); doc.setFont('helvetica','bold');
-      var userLines = doc.splitTextToSize('Dr. Agbesi: ' + clean, usableW - 4);
-      var bH = userLines.length * 4.5 + 5;
-      checkPage(bH + 4);
-      doc.roundedRect(margin + 20, y, usableW - 20, bH, 2, 2, 'F');
-      doc.text(userLines, margin + 22, y + 5);
-      y += bH + 4;
-    } else {
-      // AI response — parse and render
-      doc.setTextColor(30, 30, 30);
-      doc.setFillColor(248, 250, 252);
-      doc.setFontSize(9); doc.setFont('helvetica','normal');
-
-      // Split into sections
-      var sections = clean.split(/\n(?=##|#|\n)/);
-      sections.forEach(function(section) {
-        var trimmed = section.trim();
-        if (!trimmed) return;
-
-        if (trimmed.startsWith('## ') || trimmed.startsWith('# ')) {
-          // Heading
-          checkPage(10);
-          doc.setFont('helvetica','bold');
-          doc.setFontSize(11);
-          doc.setTextColor(20, 120, 100);
-          var hText = trimmed.replace(/^#+\s*/,'');
-          doc.text(hText.slice(0, 80), margin, y);
-          y += 7;
-          doc.setTextColor(30, 30, 30);
-          doc.setFont('helvetica','normal');
-          doc.setFontSize(9);
-        } else if (trimmed.startsWith('* PEARL:')) {
-          // Pearl
-          checkPage(12);
-          doc.setFillColor(255, 248, 220);
-          doc.setTextColor(140, 90, 0);
-          doc.setFont('helvetica','bolditalic');
-          var pLines = doc.splitTextToSize('★ ' + trimmed.slice(8), usableW - 6);
-          var pH = pLines.length * 4.5 + 4;
-          doc.roundedRect(margin, y, usableW, pH, 2, 2, 'F');
-          doc.text(pLines, margin + 3, y + 4);
-          y += pH + 3;
-          doc.setTextColor(30, 30, 30);
-          doc.setFont('helvetica','normal');
-        } else {
-          // Normal paragraph
-          var paraLines = doc.splitTextToSize(trimmed, usableW);
-          var paraH = paraLines.length * 4.5;
-          checkPage(paraH + 3);
-          doc.text(paraLines, margin, y);
-          y += paraH + 3;
-        }
-      });
-
-      // Add ECG canvases
-      document.querySelectorAll('.ecg-wrap canvas').forEach(function(canvas) {
-        try {
-          var imgData = canvas.toDataURL('image/png');
-          var cW = 160, cH = Math.round(canvas.height / canvas.width * cW);
-          checkPage(cH + 8);
-          doc.setFillColor(4, 14, 8);
-          doc.rect(margin, y, cW, cH, 'F');
-          doc.addImage(imgData, 'PNG', margin, y, cW, cH);
-          doc.setFontSize(7); doc.setTextColor(80, 80, 80);
-          doc.text('ECG — SmartMedicine', margin, y + cH + 3);
-          y += cH + 8;
-        } catch(e) {}
-      });
-
-      y += 2;
-      // Separator
-      doc.setDrawColor(200, 230, 220);
-      doc.line(margin, y, pageW - margin, y);
-      y += 4;
-    }
-  });
-
-  // ── Flashcards section ──
-  if (flashcards && flashcards.length > 0) {
-    addPage();
-    doc.setFontSize(14); doc.setFont('helvetica','bold');
-    doc.setTextColor(20, 120, 100);
-    doc.text('Flashcards — ' + flashcards.length + ' cards', margin, y); y += 10;
-
-    flashcards.forEach(function(fc, i) {
-      checkPage(20);
-      doc.setFillColor(230, 245, 255);
-      doc.setFontSize(8); doc.setFont('helvetica','bold');
-      doc.setTextColor(0, 60, 120);
-      var qLines = doc.splitTextToSize('Q: ' + fc.front, usableW - 4);
-      var aLines = doc.splitTextToSize('A: ' + fc.back,  usableW - 4);
-      var cardH = (qLines.length + aLines.length) * 4 + 8;
-      doc.roundedRect(margin, y, usableW, cardH, 2, 2, 'F');
-      doc.text(qLines, margin + 3, y + 4);
-      doc.setFillColor(220, 240, 230);
-      doc.setTextColor(0, 80, 40);
-      doc.rect(margin, y + qLines.length*4+4, usableW, aLines.length*4+4, 'F');
-      doc.text(aLines, margin + 3, y + qLines.length*4 + 8);
-      y += cardH + 4;
-    });
-  }
-
-  // ── Footer ──
-  var pageCount = doc.internal.getNumberOfPages();
-  for (var p = 1; p <= pageCount; p++) {
-    doc.setPage(p);
-    doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.setTextColor(150, 150, 150);
-    doc.text('SmartMedicine · Dr. Agbesi · Page ' + p + ' of ' + pageCount, margin, pageH - 8);
-  }
-
-  var filename = (activeTopic ? activeTopic.title.replace(/[^a-z0-9]/gi,'_').slice(0,40) : 'SmartMedicine') + '_' + new Date().toISOString().slice(0,10) + '.pdf';
-  doc.save(filename);
-  showToast('✅ PDF exported: ' + filename, 'teal');
-}
-
-/* ══ FIX: PATCH sendMessage to include file attachment ═════════════ */
-var _baseSendMessage = sendMessage;
-sendMessage = async function() {
-  // If there's an attachment, include it in the request
-  if (attachedFile) {
-    var el  = document.getElementById('msg-input');
-    var txt = el.value.trim();
-    if (!txt || loading || !activeId) return;
-
-    el.value = ''; updateCC();
-    var fileInfo = '[Attached file: ' + attachedFile.name + ' (' + attachedFile.type + ')]\n\n';
-    var msgContent = txt;
-
-    messages.push({ role:'user', content: fileInfo + msgContent });
-    messages.push({ role:'assistant', content:'' });
-    renderMessages(); scrollBottom(); setLoading(true);
-
-    var hist = messages.slice(0,-1).map(function(m) { return { role:m.role, content:m.content }; });
-
-    // Build message with file content
-    var userMsg;
-    if (attachedFile.type.startsWith('image/')) {
-      // Image — send as vision message
-      userMsg = {
-        role: 'user',
-        content: [
-          { type:'image', source:{ type:'base64', media_type: attachedFile.type, data: attachedFile.dataUrl.split(',')[1] } },
-          { type:'text', text: msgContent }
-        ]
-      };
-    } else {
-      // Text/PDF — include as text
-      userMsg = { role:'user', content: fileInfo + msgContent };
-    }
-
-    hist[hist.length-1] = userMsg;
-
-    try {
-      var abortCtrl2 = new AbortController();
-      abortCtrl = abortCtrl2;
-      var res = await fetch(API + '/chat', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ messages: hist, topic_id: activeId }),
-        signal: abortCtrl2.signal
-      });
-      if (!res.ok) { var t2=await res.text(); throw new Error('Server '+res.status+': '+t2.slice(0,100)); }
-      var reader2 = res.body.getReader(), dec2 = new TextDecoder(), buf2='';
-      while(true){
-        var rv2=await reader2.read(); if(rv2.done)break;
-        buf2+=dec2.decode(rv2.value,{stream:true});
-        var lines2=buf2.split('\n'); buf2=lines2.pop()||'';
-        for(var li=0;li<lines2.length;li++){
-          if(!lines2[li].startsWith('data: '))continue;
-          try{var d2=JSON.parse(lines2[li].slice(6));if(d2.type==='delta'){messages[messages.length-1].content+=d2.text;updateLastBubble();}if(d2.type==='done'){try{flashcards=await safeFetch(API+'/flashcards/topic/'+activeId);renderFlashcards();updateTabLabels();await loadTopics();}catch(e){}var fm=messages[messages.length-1];if(fm&&fm.role==='assistant'&&fm.content){extractAndSavePearls(fm.content,activeId,activeTopic?activeTopic.specialty:'General');}}}catch(e){}
-        }
-      }
-    } catch(e) {
-      if(e.name!=='AbortError'){messages[messages.length-1].content='❌ '+e.message;renderMessages();showToast('⚠ '+e.message,'danger');}
-    }
-    setLoading(false); scrollBottom();
-
-    // Keep attachment until user clears it (persistence fix)
-    // Don't auto-clear: user may want to ask more questions about same document
-    document.getElementById('export-btn').style.display = 'flex';
-    return;
-  }
-  // No attachment — call original
-  _baseSendMessage.call(this);
-  // Show export button after sending
-  if (messages.length > 2) document.getElementById('export-btn').style.display = 'flex';
-};
-
-/* ══ FIX: PATCH switchTab to restore attachment ════════════════════ */
-var _storedSwitchTab = switchTab;
-switchTab = function(tab) {
-  _storedSwitchTab(tab);
-  if (tab === 'chat') {
-    restoreAttachment();
-    if (messages.length > 2) {
-      var eb = document.getElementById('export-btn');
-      if (eb) eb.style.display = 'flex';
-    }
-  }
-};
-
-
-
-/* ══ LIGHT / DARK THEME TOGGLE ═══════════════════════════════════ */
-var isLightMode = false;
-function toggleTheme() {
-  isLightMode = !isLightMode;
-  document.body.classList.toggle('light-mode', isLightMode);
-  var icon = document.getElementById('theme-icon');
-  if (icon) icon.className = isLightMode ? 'bi bi-moon-fill' : 'bi bi-sun-fill';
-  try { localStorage.setItem('sm_theme', isLightMode ? 'light' : 'dark'); } catch(e) {}
-}
-function loadTheme() {
-  try {
-    var saved = localStorage.getItem('sm_theme');
-    if (saved === 'light') { isLightMode = true; document.body.classList.add('light-mode'); var icon = document.getElementById('theme-icon'); if(icon) icon.className = 'bi bi-moon-fill'; }
-  } catch(e) {}
-}
-
-/* ══ VOICE INPUT ══════════════════════════════════════════════════ */
-var voiceRecog = null, voiceActive = false;
-function initVoice() {
-  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) return;
-  document.getElementById('voice-btn').style.display = 'flex';
-  voiceRecog = new SpeechRecognition();
-  voiceRecog.continuous = false;
-  voiceRecog.lang = 'en-GB';
-  voiceRecog.interimResults = false;
-  voiceRecog.onresult = function(e) {
-    var transcript = e.results[0][0].transcript;
-    var inp = document.getElementById('msg-input');
-    inp.value = (inp.value ? inp.value + ' ' : '') + transcript;
-    updateCC(); inp.focus();
-  };
-  voiceRecog.onend = function() {
-    voiceActive = false;
-    var btn = document.getElementById('voice-btn'), ico = document.getElementById('voice-icon');
-    if (btn) btn.classList.remove('recording');
-    if (ico) ico.className = 'bi bi-mic-fill';
-  };
-  voiceRecog.onerror = function() { voiceActive = false; showToast('Voice input error', 'danger'); };
-}
-function toggleVoice() {
-  if (!voiceRecog) { showToast('Voice input not supported in this browser', 'amber'); return; }
-  if (voiceActive) { voiceRecog.stop(); }
-  else {
-    voiceActive = true;
-    var btn = document.getElementById('voice-btn'), ico = document.getElementById('voice-icon');
-    if (btn) btn.classList.add('recording');
-    if (ico) ico.className = 'bi bi-stop-fill';
-    showToast('🎙 Listening…', 'teal');
-    try { voiceRecog.start(); } catch(e) { voiceActive = false; }
-  }
-}
-
-/* ══ FEATURES MODAL TAB SWITCHER ═════════════════════════════════ */
-var featPanes = ['sim','diff','anchor','heat','recon','bedside'];
-function featTab(name, btn) {
-  featPanes.forEach(function(p) {
-    var el = document.getElementById('fp-' + p);
-    var b  = document.getElementById('ft-' + p);
-    if (el) el.style.display = p === name ? 'block' : 'none';
-    if (b)  b.classList.toggle('active', p === name);
-  });
-  if (name === 'anchor') renderAnchors();
-  if (name === 'heat')   renderHeatMap();
-}
-
-/* ══ VIRTUAL PATIENT SIMULATOR ═══════════════════════════════════ */
-var simMessages = [], simCase = null, simReveal = null;
-function startPatientSim() {
-  var spec = document.getElementById('sim-specialty').value;
-  var diff = document.getElementById('sim-difficulty').value;
-  simMessages = [];
-  simCase = null;
-  document.getElementById('sim-output').style.display = 'block';
-  document.getElementById('sim-messages').innerHTML = '';
-  simAddMsg('system', '🩺 Starting ' + diff + ' encounter in ' + spec + '…');
-  var prompt = 'You are running a clinical simulation for Dr. Agbesi. Generate a realistic ' + diff + ' level patient case in ' + spec + ' (Ghana context where relevant). '
-    + 'Start by describing the patient walking in: age, sex, chief complaint, and first impression. '
-    + 'Do NOT give the diagnosis. Dr. Agbesi will question and examine. Respond AS the patient/nurse/lab. '
-    + 'Keep responses concise (2-4 sentences). When Dr. Agbesi orders investigations, give realistic results. '
-    + 'Format: START WITH one paragraph describing the patient walking in. End with: "What would you like to do first?"';
-  runSimTurn(prompt, true);
-}
-function simAddMsg(role, text) {
-  var div = document.createElement('div');
-  div.className = role === 'doctor' ? 'bubble-user text-end mb-2' : 'patient-bubble mb-2';
-  div.style.cssText = role === 'doctor' ? 'background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.2);border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:.85rem;color:var(--sm-text1)' : '';
-  div.innerHTML = (role === 'doctor' ? '<strong style="color:var(--sm-teal)">Dr. Agbesi:</strong> ' : '<strong style="color:#a78bfa">Patient/Nurse:</strong> ') + esc(text);
-  document.getElementById('sim-messages').appendChild(div);
-  div.scrollIntoView({ behavior:'smooth' });
-}
-async function runSimTurn(prompt, isFirst) {
-  var msgs = isFirst ? [{ role:'user', content: prompt }]
-    : simMessages.concat([{ role:'user', content: document.getElementById('sim-input').value.trim() }]);
-  if (!isFirst) { simAddMsg('doctor', document.getElementById('sim-input').value.trim()); document.getElementById('sim-input').value = ''; }
-  simMessages = msgs;
-  var loadDiv = document.createElement('div');
-  loadDiv.className = 'patient-bubble mb-2';
-  loadDiv.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
-  document.getElementById('sim-messages').appendChild(loadDiv);
-  try {
-    var res = await fetch(API + '/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages: msgs, topic_id: null }) });
-    var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', full = '';
-    while(true) { var rv = await reader.read(); if(rv.done) break; buf += dec.decode(rv.value,{stream:true}); var lines = buf.split('\n'); buf = lines.pop()||''; for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}} }
-    loadDiv.remove();
-    simAddMsg('patient', full.trim());
-    simMessages.push({ role:'assistant', content: full });
-    simCase = { messages: simMessages, specialty: document.getElementById('sim-specialty').value };
-  } catch(e) { loadDiv.remove(); simAddMsg('system', 'Error: ' + e.message); }
-}
-function simSend() {
-  var txt = document.getElementById('sim-input').value.trim();
-  if (!txt) return;
-  runSimTurn(null, false);
-}
-function simRevealDiagnosis() {
-  if (!simCase) return;
-  var revPrompt = 'The clinical encounter is over. Now reveal the diagnosis and teach Dr. Agbesi every step: '
-    + '1) The diagnosis and why 2) Every finding explained mechanistically from first principles '
-    + '3) What he got right and what he missed 4) How to never miss this again. Be thorough and verbose.';
-  var featModal = bootstrap.Modal.getInstance(document.getElementById('featuresModal'));
-  if (featModal) featModal.hide();
-  setTimeout(function() {
-    if (!activeId) { newSession(revPrompt); } 
-    else { injectPrompt(revPrompt); sendMessage(); }
-  }, 400);
-}
-
-/* ══ DIFFERENTIAL DIAGNOSIS ENGINE ══════════════════════════════ */
-async function runDiffDx() {
-  var symptoms = document.getElementById('diff-input').value.trim();
-  if (!symptoms) { showToast('Enter symptoms first', 'amber'); return; }
-  var out = document.getElementById('diff-output');
-  out.innerHTML = '<div class="typing-dots justify-content-center py-3"><span></span><span></span><span></span></div>';
-  var prompt = 'Dr. Agbesi presents this clinical picture: "' + symptoms + '". '
-    + 'Generate a RANKED differential diagnosis (top 6 conditions). For EACH condition provide: '
-    + '1) Condition name 2) Probability rank (High/Medium/Low) 3) The core mechanism in ONE sentence '
-    + '4) The ONE clinical finding or investigation that confirms OR excludes this diagnosis. '
-    + 'Format EXACTLY as: DIAGNOSIS: [name] | PROBABILITY: [High/Medium/Low] | MECHANISM: [one sentence] | KEY FINDING: [one finding] '
-    + 'Then after all 6, add SEPARATOR: and a full mechanistic teaching paragraph about the most likely diagnosis.';
-  try {
-    var res = await fetch(API + '/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages:[{role:'user',content:prompt}], topic_id:null }) });
-    var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', full = '';
-    while(true){var rv=await reader.read();if(rv.done)break;buf+=dec.decode(rv.value,{stream:true});var lines=buf.split('\n');buf=lines.pop()||'';for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}}}
-    renderDiffDx(full, out);
-  } catch(e) { out.innerHTML = '<div style="color:var(--sm-danger);font-size:.8rem">Error: ' + esc(e.message) + '</div>'; }
-}
-function renderDiffDx(text, out) {
-  var colors = { 'High':'var(--sm-danger)', 'Medium':'var(--sm-amber)', 'Low':'var(--sm-teal)' };
-  var lines = text.split('\n').filter(function(l) { return l.indexOf('DIAGNOSIS:') > -1; });
-  var sepIdx = text.indexOf('SEPARATOR:');
-  var teaching = sepIdx > -1 ? text.slice(sepIdx + 10).trim() : '';
-  var html2 = '';
-  lines.forEach(function(line, i) {
-    var diag = (line.match(/DIAGNOSIS:\s*([^|]+)/) || [])[1] || '';
-    var prob = (line.match(/PROBABILITY:\s*([^|]+)/) || [])[1] || '';
-    var mech = (line.match(/MECHANISM:\s*([^|]+)/) || [])[1] || '';
-    var key  = (line.match(/KEY FINDING:\s*(.+)/) || [])[1] || '';
-    if (!diag) return;
-    var col = colors[prob.trim()] || 'var(--sm-text3)';
-    html2 += '<div class="diff-card" onclick="learnDiff(\'' + diag.trim().replace(/'/g,"\\'") + '\')">';
-    html2 += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
-    html2 += '<span style="font-size:.75rem;font-weight:800;color:' + col + ';font-family:var(--sm-mono)">' + (i+1) + '. ' + esc(diag.trim()) + '</span>';
-    html2 += '<span class="diff-prob ms-auto" style="color:' + col + '">' + esc(prob.trim()) + '</span></div>';
-    html2 += '<div style="font-size:.75rem;color:var(--sm-text2);margin-bottom:3px">⚙ ' + esc(mech.trim()) + '</div>';
-    if (key) html2 += '<div style="font-size:.73rem;color:var(--sm-text3)">🔑 ' + esc(key.trim()) + '</div>';
-    html2 += '</div>';
-  });
-  if (teaching) {
-    html2 += '<div class="challenge-box mt-2"><div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;color:var(--sm-text3);margin-bottom:.4rem;font-family:var(--sm-mono)">MOST LIKELY — MECHANISM</div>';
-    html2 += '<div style="font-size:.82rem;color:var(--sm-text1);line-height:1.7">' + esc(teaching.slice(0,600)) + '</div></div>';
-  }
-  out.innerHTML = html2 || '<div style="color:var(--sm-text3);font-size:.8rem">Could not parse response. Try again.</div>';
-}
-function learnDiff(condition) {
-  var featModal = bootstrap.Modal.getInstance(document.getElementById('featuresModal'));
-  if (featModal) featModal.hide();
-  setTimeout(function() {
-    var prompt = 'Teach me ' + condition + ' from absolute first principles — Layer 0 to Layer 5. Include 12-lead ECG if cardiac. Be verbose and thorough.';
-    if (!activeId) newSession(prompt);
-    else { injectPrompt(prompt); sendMessage(); }
-  }, 400);
-}
-
-/* ══ CLINICAL ANCHOR LIBRARY ═════════════════════════════════════ */
-var anchors = [];
-function loadAnchors() {
-  try { anchors = JSON.parse(localStorage.getItem('sm_anchors') || '[]'); } catch(e) { anchors = []; }
-}
-function saveAnchors() {
-  try { localStorage.setItem('sm_anchors', JSON.stringify(anchors)); } catch(e) {}
-}
-function renderAnchors() {
-  loadAnchors();
-  var list = document.getElementById('anchor-list');
-  var empty = document.getElementById('anchor-empty');
-  if (!list) return;
-  if (anchors.length === 0) { list.innerHTML = ''; if(empty) empty.style.display = 'block'; return; }
-  if (empty) empty.style.display = 'none';
-  list.innerHTML = anchors.map(function(a, i) {
-    return '<div class="anchor-card">'
-      + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'
-      + '<div><div style="font-size:.78rem;font-weight:700;color:#a78bfa;margin-bottom:3px">⚓ ' + esc(a.concept) + '</div>'
-      + '<div style="font-size:.8rem;color:var(--sm-text1);line-height:1.6">' + esc(a.anchor) + '</div>'
-      + (a.specialty ? '<span class="badge rounded-pill sp-' + a.specialty.replace(/ /g,'_') + ' mt-1" style="font-size:.54rem">' + esc(a.specialty) + '</span>' : '') + '</div>'
-      + '<button onclick="deleteAnchor(' + i + ')" style="background:none;border:none;color:var(--sm-text3);cursor:pointer;font-size:.75rem;flex-shrink:0"><i class="bi bi-trash"></i></button>'
-      + '</div></div>';
-  }).join('');
-}
-function addAnchor() {
-  var concept = prompt('Concept (e.g. Coronary Anatomy):');
-  if (!concept) return;
-  var anchor = prompt('Your spatial anchor for this concept:');
-  if (!anchor) return;
-  loadAnchors();
-  anchors.unshift({ concept: concept, anchor: anchor, specialty: activeTopic ? activeTopic.specialty : 'General', date: new Date().toISOString() });
-  saveAnchors();
-  renderAnchors();
-  showToast('⚓ Anchor saved!', 'teal');
-}
-function deleteAnchor(i) {
-  loadAnchors();
-  anchors.splice(i, 1);
-  saveAnchors();
-  renderAnchors();
-}
-// Auto-extract anchors from AI responses
-function extractAnchors(text, specialty) {
-  if (!text) return;
-  var re = /[Ss]patial anchor[^:]*:\s*([^\n]+)/g;
-  var m;
-  while ((m = re.exec(text)) !== null) {
-    var anchor = m[1].trim().replace(/[*_]/g,'');
-    var conceptMatch = text.match(/(?:for |about |of )([A-Z][^.]+?)(?:\s+is\s+|\s*—\s*|\s*:\s*)/);
-    var concept = conceptMatch ? conceptMatch[1].trim() : (activeTopic ? activeTopic.title : 'Concept');
-    if (anchor.length > 10) {
-      loadAnchors();
-      var exists = anchors.some(function(a) { return a.anchor === anchor; });
-      if (!exists) {
-        anchors.unshift({ concept: concept, anchor: anchor, specialty: specialty || 'General', date: new Date().toISOString() });
-        saveAnchors();
-      }
-    }
-  }
-}
-
-/* ══ WEAK SPOT HEAT MAP ══════════════════════════════════════════ */
-var weakSpotData = {};
-function loadWeakSpots() {
-  try { weakSpotData = JSON.parse(localStorage.getItem('sm_weakspots') || '{}'); } catch(e) { weakSpotData = {}; }
-}
-function saveWeakSpots() {
-  try { localStorage.setItem('sm_weakspots', JSON.stringify(weakSpotData)); } catch(e) {}
-}
-function recordExamResult(specialty, correct) {
-  loadWeakSpots();
-  if (!weakSpotData[specialty]) weakSpotData[specialty] = { correct:0, total:0 };
-  weakSpotData[specialty].total++;
-  if (correct) weakSpotData[specialty].correct++;
-  saveWeakSpots();
-}
-function renderHeatMap() {
-  loadWeakSpots();
-  var el = document.getElementById('heat-map');
-  if (!el) return;
-  var specs = ['Cardiology','Respiratory','Nephrology','Neurology','Endocrinology','Haematology',
-               'Gastroenterology','Pharmacology','Infectious Disease','Surgery','Obstetrics',
-               'Paediatrics','Psychiatry','Anatomy','Physiology','Biochemistry','Pathology','Microbiology'];
-  var html2 = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">';
-  var hasData = false;
-  specs.forEach(function(s) {
-    var d = weakSpotData[s];
-    var pct = d && d.total > 0 ? Math.round(d.correct / d.total * 100) : -1;
-    var bg, col;
-    if (pct === -1)       { bg = 'rgba(255,255,255,0.04)'; col = 'var(--sm-text3)'; }
-    else if (pct < 40)    { bg = 'rgba(244,63,94,0.2)';  col = '#fda4af'; hasData = true; }
-    else if (pct < 70)    { bg = 'rgba(245,158,11,0.2)'; col = '#fcd34d'; hasData = true; }
-    else                  { bg = 'rgba(20,184,166,0.15)'; col = '#5eead4'; hasData = true; }
-    var label = pct === -1 ? 'No data' : pct + '%';
-    html2 += '<div class="heat-cell" style="background:' + bg + ';color:' + col + '" onclick="drillTopic(\'' + s + '\')" title="' + s + '">'
-      + '<div style="font-size:.62rem;margin-bottom:2px">' + esc(s.replace(/ /g,'\n').slice(0,14)) + '</div>'
-      + '<div style="font-size:.78rem;font-weight:800">' + label + '</div>'
-      + (d && d.total > 0 ? '<div style="font-size:.58rem;opacity:.6">' + d.correct + '/' + d.total + '</div>' : '') + '</div>';
-  });
-  html2 += '</div>';
-  if (!hasData) {
-    html2 += '<div style="text-align:center;margin-top:.75rem;font-size:.78rem;color:var(--sm-text3)">Answer USMLE questions in the exam tab to build your heat map.</div>';
-  }
-  el.innerHTML = html2;
-}
-function drillWeakSpot() {
-  loadWeakSpots();
-  var worst = null, worstPct = 100;
-  for (var s in weakSpotData) {
-    var d = weakSpotData[s];
-    if (d.total > 0) {
-      var pct = d.correct / d.total;
-      if (pct < worstPct) { worstPct = pct; worst = s; }
-    }
-  }
-  if (!worst) { showToast('Answer some USMLE questions first to identify weak spots', 'amber'); return; }
-  var featModal = bootstrap.Modal.getInstance(document.getElementById('featuresModal'));
-  if (featModal) featModal.hide();
-  setTimeout(function() { drillTopic(worst); }, 400);
-}
-function drillTopic(spec) {
-  var featModal = bootstrap.Modal.getInstance(document.getElementById('featuresModal'));
-  if (featModal) featModal.hide();
-  setTimeout(function() {
-    var prompt = 'I am weak in ' + spec + '. Teach me the highest-yield USMLE mechanisms in ' + spec + ' from absolute first principles. Focus on the concepts I most commonly get wrong. Be extremely thorough and verbose.';
-    if (!activeId) newSession(prompt);
-    else { injectPrompt(prompt); sendMessage(); }
-  }, 400);
-}
-
-/* ══ RECONSTRUCTION CHALLENGE ════════════════════════════════════ */
-var reconTopics = [];
-async function newReconChallenge() {
-  document.getElementById('recon-start').style.display = 'none';
-  document.getElementById('recon-challenge').style.display = 'block';
-  document.getElementById('recon-result').style.display = 'none';
-  document.getElementById('recon-answer').value = '';
-  document.getElementById('recon-question').textContent = '⟳ Generating challenge…';
-  var spec = activeTopic ? activeTopic.specialty : 'General Medicine';
-  var prompt = 'Generate ONE hard reconstruction challenge for Dr. Agbesi about ' + spec + '. '
-    + 'Format: a clinical scenario where a patient presents with specific findings, '
-    + 'and Dr. Agbesi must reconstruct the FULL mechanism from molecular level to bedside. '
-    + 'Output ONLY the challenge question itself — no answer, no preamble. '
-    + 'Example: "A 45yr diabetic presents with DKA. Reconstruct from insulin deficiency at the '
-    + 'receptor level all the way to Kussmaul breathing and the anion gap acidosis." '
-    + 'Make it challenging, specific, and mechanistically rich.';
-  try {
-    var res = await fetch(API + '/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages:[{role:'user',content:prompt}], topic_id:null }) });
-    var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', full = '';
-    while(true){var rv=await reader.read();if(rv.done)break;buf+=dec.decode(rv.value,{stream:true});var lines=buf.split('\n');buf=lines.pop()||'';for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}}}
-    document.getElementById('recon-question').textContent = full.trim();
-  } catch(e) { document.getElementById('recon-question').textContent = 'Error generating challenge. Try again.'; }
-}
-async function gradeReconstruction() {
-  var question = document.getElementById('recon-question').textContent;
-  var answer   = document.getElementById('recon-answer').value.trim();
-  if (!answer || answer.length < 20) { showToast('Write your reconstruction first', 'amber'); return; }
-  var resultEl = document.getElementById('recon-result');
-  resultEl.style.display = 'block';
-  resultEl.innerHTML = '<div class="typing-dots py-2"><span></span><span></span><span></span></div>';
-  var prompt = 'Grade Dr. Agbesi\'s reconstruction attempt. QUESTION: ' + question + '\nHIS ANSWER: ' + answer
-    + '\n\nGrade it: 1) What he got RIGHT (specific steps) 2) What he MISSED (specific gaps) '
-    + '3) What was WRONG mechanistically 4) The FULL correct reconstruction from first principles '
-    + '5) A score out of 10 with justification. Be thorough and encouraging but precise.';
-  try {
-    var res = await fetch(API + '/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages:[{role:'user',content:prompt}], topic_id:null }) });
-    var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', full = '';
-    while(true){var rv=await reader.read();if(rv.done)break;buf+=dec.decode(rv.value,{stream:true});var lines=buf.split('\n');buf=lines.pop()||'';for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}}}
-    resultEl.innerHTML = '<div class="challenge-box"><div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;color:var(--sm-text3);margin-bottom:.4rem;font-family:var(--sm-mono)">GRADING RESULT</div><div style="font-size:.84rem;color:var(--sm-text1);line-height:1.75">' + esc(full.trim()) + '</div></div>';
-  } catch(e) { resultEl.innerHTML = '<div style="color:var(--sm-danger);font-size:.8rem">' + esc(e.message) + '</div>'; }
-}
-
-/* ══ BEDSIDE MODE ════════════════════════════════════════════════ */
-async function runBedside() {
-  var findings = document.getElementById('bedside-input').value.trim();
-  if (!findings) { showToast('Describe your patient findings first', 'amber'); return; }
-  var out = document.getElementById('bedside-output');
-  out.innerHTML = '<div class="typing-dots py-2"><span></span><span></span><span></span></div>';
-  var prompt = 'BEDSIDE MODE — Dr. Agbesi is at the bedside RIGHT NOW with a patient. '
-    + 'Clinical findings: "' + findings + '". '
-    + 'Give him: 1) Most likely diagnosis and immediate mechanism (2-3 sentences) '
-    + '2) The ONE most important thing to do RIGHT NOW and why mechanistically '
-    + '3) Red flags to watch for in the next 30 minutes and why '
-    + '4) Quick 3-point teaching to never forget this presentation. '
-    + 'Be concise, actionable, and mechanistic. This is the bedside — not a lecture.';
-  try {
-    var res = await fetch(API + '/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages:[{role:'user',content:prompt}], topic_id:null }) });
-    var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', full = '';
-    while(true){var rv=await reader.read();if(rv.done)break;buf+=dec.decode(rv.value,{stream:true});var lines=buf.split('\n');buf=lines.pop()||'';for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}}}
-    out.innerHTML = '<div class="challenge-box">' + esc(full.trim()) + '</div>';
-    // Save to learning session
-    if (activeId) {
-      var anchor = findings.slice(0,80);
-      loadAnchors();
-      anchors.unshift({ concept:'Bedside Case: '+anchor, anchor:full.slice(0,200), specialty: activeTopic ? activeTopic.specialty : 'General', date: new Date().toISOString() });
-      saveAnchors();
-    }
-  } catch(e) { out.innerHTML = '<div style="color:var(--sm-danger);font-size:.8rem">' + esc(e.message) + '</div>'; }
-}
-
-/* ══ CROSS-SPECIALTY CONNECTOR (auto-runs after each session) ════ */
-function checkCrossConnections(text, specialty) {
-  if (!text || !topics || topics.length < 2) return;
-  var keywords = extractKeywords(text);
-  var related = topics.filter(function(t) {
-    return t.id !== activeId && t.specialty !== specialty && keywords.some(function(k) { return t.title.toLowerCase().indexOf(k) > -1; });
-  });
-  if (related.length > 0 && related.length < 4) {
-    var names = related.slice(0,2).map(function(t) { return '"' + t.title + '"'; }).join(' and ');
-    setTimeout(function() {
-      showToast('🔗 Connected to your session on ' + names, 'amber');
-    }, 2000);
-  }
-}
-function extractKeywords(text) {
-  var stopwords = ['the','and','for','that','this','with','from','have','been','which','they','will','are','its'];
-  return text.toLowerCase().replace(/[^a-z ]/g,' ').split(' ')
-    .filter(function(w) { return w.length > 5 && stopwords.indexOf(w) === -1; })
-    .slice(0, 20);
-}
-
-/* ══ PATCH: updateLastBubble — add anchor + cross-connect detection */
-var _prevUpdateLastBubble = updateLastBubble;
-updateLastBubble = function() {
-  _prevUpdateLastBubble();
-  var last = messages[messages.length - 1];
-  if (last && last.role === 'assistant' && last.content) {
-    extractAnchors(last.content, activeTopic ? activeTopic.specialty : 'General');
-    checkCrossConnections(last.content, activeTopic ? activeTopic.specialty : 'General');
-  }
-};
-
-/* ══ PATCH: answerExam — record weak spots ════════════════════════ */
-var _prevAnswerExam = answerExam;
-answerExam = function(chosen, correct, explanation) {
-  _prevAnswerExam(chosen, correct, explanation);
-  var spec = activeTopic ? activeTopic.specialty : 'General';
-  recordExamResult(spec, chosen === correct);
-};
-
-/* ══ BOOT: load theme + init voice on startup ════════════════════ */
-var _prevInit = init;
-init = function() {
-  _prevInit();
-  loadTheme();
-  initVoice();
-  loadAnchors();
-  if (window.innerWidth >= 992) {
-    var vb = document.getElementById('voice-btn');
-    if (vb) vb.style.display = 'flex';
-  }
-};
 
 
 
