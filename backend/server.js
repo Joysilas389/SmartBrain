@@ -25,7 +25,11 @@ app.post('/api/classify', (req, res) => {
 });
 
 // ── Health check ───────────────────────────────────────
-app.get('/health', (req, res) => res.json({ status: 'ok', service: 'SmartMedicine' }));
+app.get('/health', (req, res) => {
+  const { statsOps } = require('./db/database');
+  const stats = statsOps.overview();
+  res.json({ status: 'ok', service: 'SmartMedicine', db: stats, disk: process.env.DATA_DIR || '/data' });
+});
 
 // ══ SYSTEM PROMPT ═════════════════════════════════════
 const SYSTEM_PROMPT = `You are SmartMedicine — an elite AI specialist physician and the dedicated personal medical tutor for Dr. Agbesi, a doctor from Ghana preparing for the USMLE. You are simultaneously a world-class expert in EVERY medical specialty: Cardiology, Respiratory Medicine, Nephrology, Neurology, Endocrinology, Haematology, Gastroenterology, Infectious Disease, Pharmacology, Surgery, Obstetrics, Paediatrics, Immunology, Psychiatry, Biochemistry, Anatomy, Physiology, Pathology, Microbiology, and all others.
@@ -266,16 +270,31 @@ app.post('/api/chat', async (req, res) => {
     if (assistantMsgId && fullText) {
       msgOps.updateContent(assistantMsgId, fullText);
 
-      // Auto-extract flashcards
+      // Auto-extract flashcards — robust line-by-line parser
       if (topic_id) {
         const specialty = classifySpecialty(fullText);
-        const fcRegex = /FRONT:\s*(.+?)\nBACK:\s*(.+?)(?=\nFRONT:|\n---END|\n---$|$)/gs;
-        let m;
-        while ((m = fcRegex.exec(fullText)) !== null) {
-          const front = m[1].trim();
-          const back  = m[2].trim();
-          if (front && back && front.length > 5) {
-            fcOps.insert({ topic_id, specialty, front, back, source: 'ai' });
+        const blockMatch = fullText.match(/---FLASHCARDS---([\s\S]*?)---END-FLASHCARDS---/);
+        if (blockMatch) {
+          const block = blockMatch[1];
+          const lines = block.split('\n');
+          let front = '', back = '', inBack = false;
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('FRONT:')) {
+              // Save previous card if complete
+              if (front && back && front.length > 5 && back.length > 5) {
+                fcOps.insert({ topic_id, specialty, front, back: back.trim(), source: 'ai' });
+              }
+              front = trimmed.slice(6).trim(); back = ''; inBack = false;
+            } else if (trimmed.startsWith('BACK:')) {
+              back = trimmed.slice(5).trim(); inBack = true;
+            } else if (inBack && trimmed && !trimmed.startsWith('---')) {
+              back += ' ' + trimmed; // multi-line back
+            }
+          }
+          // Save last card
+          if (front && back && front.length > 5 && back.length > 5) {
+            fcOps.insert({ topic_id, specialty, front, back: back.trim(), source: 'ai' });
           }
         }
       }

@@ -1256,11 +1256,7 @@ body.light-mode #spec-select option { background:#fff!important; color:#0f2040!i
             <span style="flex:1;font-size:.58rem;color:var(--sm-text3)">Enter to send · Shift+Enter new line</span>
             <span id="char-count" style="font-size:.58rem;color:var(--sm-text3);transition:color .2s">0/4000</span>
 
-            <!-- Right: export + stop + send -->
-            <button class="btn-send" id="export-btn" onclick="exportToPDF()" title="Export to PDF"
-              style="display:flex;width:32px;height:32px;background:rgba(167,139,250,0.15);border-color:rgba(167,139,250,0.35);color:#a78bfa;font-size:.85rem">
-              <i class="bi bi-file-earmark-pdf"></i>
-            </button>
+            <!-- Right: stop + send -->
             <button class="btn-stop" id="stop-btn" onclick="stopStream()"
               style="width:32px;height:32px;display:none;align-items:center;justify-content:center">
               <i class="bi bi-stop-fill"></i>
@@ -2355,15 +2351,21 @@ function detectLayerFromText(text) {
 
 /* ══ FEATURE: CLINICAL PEARL COLLECTOR ═════════════════ */
 var pearls = [];
+function loadPearls() {
+  try { pearls = JSON.parse(localStorage.getItem('sm_pearls') || '[]'); } catch(e) { pearls = []; }
+}
+function savePearls() {
+  try { localStorage.setItem('sm_pearls', JSON.stringify(pearls.slice(0, 200))); } catch(e) {}
+}
 function extractAndSavePearls(text, topicId, specialty) {
   if (!text) return;
+  loadPearls();
   var parts = text.split('\n');
   for (var i = 0; i < parts.length; i++) {
     var line = parts[i];
     if (line.indexOf('\u2605') > -1) {
       var content = line.replace(/\u2605\s*(PEARL[:\s]+)?/i, '').trim().replace(/\*\*/g,'');
       if (content.length > 20 && content.length < 400) {
-        // Dedup — never save same pearl text twice
         var alreadyExists = pearls.some(function(p) { return p.content === content; });
         if (!alreadyExists) {
           pearls.push({ id: Date.now() + Math.random(), content: content, specialty: specialty || 'General', topicId: topicId });
@@ -2371,6 +2373,7 @@ function extractAndSavePearls(text, topicId, specialty) {
       }
     }
   }
+  savePearls();
   renderPearls();
 }
 function renderPearls() {
@@ -2736,13 +2739,11 @@ sendMessage = async function() {
       if(e.name!=='AbortError'){messages[messages.length-1].content='\u274C '+e.message;renderMessages();showToast('\u26A0 '+e.message,'danger');}
     }
     setLoading(false); scrollBottom();
-    var eb=document.getElementById('export-btn');if(eb)eb.style.display='flex';
     return;
   }
   // No attachment — call original
   await _baseCoreSend.apply(this, arguments);
-  var eb=document.getElementById('export-btn');
-  if(eb&&messages&&messages.length>2)eb.style.display='flex';
+
 };
 
 /* ══ PDF EXPORT ══════════════════════════════════════════════════ */
@@ -3266,6 +3267,12 @@ function extractKeywords(text){
 var _origSwitchTab = switchTab;
 switchTab = function(tab) {
   _origSwitchTab(tab);
+  // Refresh flashcards from backend when opening Cards tab
+  if (tab === 'fc' && activeId) {
+    safeFetch(API + '/flashcards/topic/' + activeId).then(function(fcs) {
+      flashcards = fcs; renderFlashcards(); updateTabLabels();
+    }).catch(function(){});
+  }
   var pp=document.getElementById('pane-pearl'), ep=document.getElementById('pane-exam');
   if(pp) pp.style.display = (tab==='pearl') ? 'block' : 'none';
   if(ep) ep.style.display = (tab==='exam')  ? 'block' : 'none';
@@ -3279,7 +3286,7 @@ switchTab = function(tab) {
   var iz=document.getElementById('input-zone');
   if(iz)iz.style.display=tab==='chat'?'block':'none';
   if(tab==='chat'){restoreAttachment();}
-  if(messages&&messages.length>2){var eb=document.getElementById('export-btn');if(eb)eb.style.display='flex';}
+
 };
 
 /* updateLastBubble — detect layer + extract anchors + cross-connect */
@@ -3302,8 +3309,7 @@ selectTopic = async function(id) {
   if(fab)fab.style.display='flex';
   var vb=document.getElementById('voice-btn');
   if(vb)vb.style.display='flex';
-  var eb=document.getElementById('export-btn');
-  if(eb&&messages&&messages.length>2)eb.style.display='flex';
+
   updateDueBanner();
   updateLayerStepper(0);
 };
@@ -3358,6 +3364,8 @@ init = function() {
   loadTheme();
   initVoice();
   loadAnchors();
+  loadPearls();
+  renderPearls();
 };
 
 

@@ -5,28 +5,19 @@ on:
     branches: [ main ]
 
 jobs:
-  deploy-backend:
-    name: Trigger Render Deploy
+  deploy-netlify:
+    name: Deploy Frontend to Netlify
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Render Deploy Hook
+      - uses: actions/checkout@v4
+      - name: Deploy to Netlify
         run: |
-          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
-            curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
-            echo "Render deploy triggered"
-          else
-            echo "RENDER_DEPLOY_HOOK not set — set it in GitHub repo secrets"
-          fi
+          curl -X POST -d '{}' "${{ secrets.NETLIFY_BUILD_HOOK }}" || echo "Netlify hook not configured"
 
-  deploy-frontend:
-    name: Trigger Netlify Deploy
+  notify-render:
+    name: Trigger Render Backend Deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Netlify Build Hook
+      - name: Trigger Render
         run: |
-          if [ -n "${{ secrets.NETLIFY_BUILD_HOOK }}" ]; then
-            curl -X POST -d '{}' "${{ secrets.NETLIFY_BUILD_HOOK }}"
-            echo "Netlify deploy triggered"
-          else
-            echo "NETLIFY_BUILD_HOOK not set — set it in GitHub repo secrets"
-          fi
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" || echo "Render hook not configured"
