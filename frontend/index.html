@@ -39,7 +39,6 @@
   --sm-serif:    'Playfair Display', Georgia, serif;
   --sm-sans:     'Nunito', system-ui, sans-serif;
   --sm-mono:     'JetBrains Mono', monospace;
-  /* Bootstrap dark overrides */
   --bs-body-bg:             #060e1c;
   --bs-body-color:          #dce9ff;
   --bs-secondary-bg:        #0b1830;
@@ -47,6 +46,109 @@
   --bs-border-color:        rgba(20,184,166,0.14);
   --bs-font-sans-serif:     'Nunito', system-ui, sans-serif;
   --bs-font-monospace:      'JetBrains Mono', monospace;
+}
+/* ── LIGHT MODE ── */
+body.light-mode {
+  --sm-bg:       #f0f4f8;
+  --sm-surface:  #ffffff;
+  --sm-panel:    #e8eef5;
+  --sm-raise:    #dce8f5;
+  --sm-border:   rgba(20,184,166,0.25);
+  --sm-text1:    #0f2040;
+  --sm-text2:    #2a4a70;
+  --sm-text3:    #5a7a9a;
+  --bs-body-bg:       #f0f4f8;
+  --bs-body-color:    #0f2040;
+  --bs-secondary-bg:  #ffffff;
+  --bs-tertiary-bg:   #e8eef5;
+  --bs-border-color:  rgba(20,184,166,0.25);
+}
+body.light-mode { background: var(--sm-bg) !important; color: var(--sm-text1); }
+body.light-mode #sidebar,
+body.light-mode .offcanvas { background: var(--sm-surface) !important; }
+body.light-mode .bubble-ai { background: #ffffff !important; border-color: rgba(20,184,166,0.2) !important; }
+body.light-mode .bubble-user { background: rgba(20,184,166,0.08) !important; }
+body.light-mode .prose { color: var(--sm-text1); }
+body.light-mode .prose h1 { color: #b45309; }
+body.light-mode .prose h2 { color: #0f766e; }
+body.light-mode .prose h3 { color: #047857; }
+body.light-mode .prose strong { color: #b45309; }
+body.light-mode .prose li { color: var(--sm-text2); }
+body.light-mode .sm-topbar, body.light-mode #topbar { background: var(--sm-surface) !important; }
+body.light-mode .modal-content { background: var(--sm-surface) !important; color: var(--sm-text1); }
+body.light-mode .topic-item:hover { background: rgba(20,184,166,0.06) !important; }
+body.light-mode .topic-item.active { background: rgba(20,184,166,0.12) !important; }
+body.light-mode #input-zone { background: var(--sm-surface) !important; }
+body.light-mode .input-shell { background: #f8fbff !important; border-color: rgba(20,184,166,0.3) !important; }
+body.light-mode #msg-input { color: var(--sm-text1) !important; }
+body.light-mode #msg-input::placeholder { color: var(--sm-text3) !important; }
+body.light-mode .pearl-card { background: rgba(245,158,11,0.06) !important; }
+body.light-mode .mermaid-wrap { background: #f8fcff !important; }
+body.light-mode .ecg-wrap { background: #040e08 !important; } /* keep ECG dark always */
+body.light-mode #bg-canvas { opacity: 0.06 !important; }
+body.light-mode .bottom-nav { background: var(--sm-surface) !important; }
+/* Theme toggle button */
+.btn-theme {
+  width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
+  background: var(--sm-panel); border: 1px solid var(--sm-border);
+  color: var(--sm-text2); font-size: 0.9rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.btn-theme:hover { border-color: var(--sm-teal); color: var(--sm-teal); }
+/* New feature modal tabs */
+.feat-tab-btn {
+  padding: 6px 14px; font-size: 0.76rem; font-weight: 700;
+  border: 1px solid var(--sm-border); border-radius: 20px;
+  color: var(--sm-text3); background: transparent; cursor: pointer;
+  transition: all 0.15s; font-family: var(--sm-sans);
+}
+.feat-tab-btn.active { color: var(--sm-teal); border-color: var(--sm-teal); background: rgba(20,184,166,0.1); }
+/* Anchor card */
+.anchor-card {
+  background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2);
+  border-left: 3px solid #a78bfa; border-radius: 10px;
+  padding: 10px 14px; margin-bottom: 7px;
+}
+/* Differential card */
+.diff-card {
+  background: var(--sm-panel); border: 1px solid var(--sm-border);
+  border-radius: 10px; padding: 10px 14px; margin-bottom: 6px;
+  cursor: pointer; transition: all 0.15s;
+}
+.diff-card:hover { border-color: var(--sm-teal); }
+.diff-prob { font-size: 0.7rem; font-weight: 800; font-family: var(--sm-mono); }
+/* Voice btn */
+.btn-voice {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  background: rgba(20,184,166,0.06); border: 1px solid var(--sm-border);
+  color: var(--sm-text3); font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; align-self: flex-end;
+}
+.btn-voice.recording { background: rgba(244,63,94,0.15); border-color: var(--sm-danger); color: var(--sm-danger); animation: pulse-red 1s infinite; }
+@keyframes pulse-red { 0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,0.3)} 50%{box-shadow:0 0 0 6px rgba(244,63,94,0)} }
+/* Weak spot heatmap */
+.heat-cell {
+  border-radius: 6px; padding: 6px 8px; font-size: 0.7rem; font-weight: 700;
+  text-align: center; cursor: pointer; transition: all 0.15s;
+}
+/* Reconstruction challenge */
+.challenge-box {
+  background: linear-gradient(135deg, rgba(0,55,155,0.2), rgba(0,100,80,0.15));
+  border: 1px solid rgba(20,184,166,0.3); border-radius: 14px; padding: 1.2rem;
+  margin: 0.75em 0;
+}
+/* Patient simulator */
+.patient-bubble {
+  background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.2);
+  border-radius: 14px 14px 14px 4px; padding: 12px 16px; margin-bottom: 10px;
+  font-size: 0.88rem; line-height: 1.7; color: var(--sm-text1);
+}
+.patient-finding {
+  background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+  border-radius: 10px; padding: 8px 14px; font-size: 0.82rem;
+  font-family: var(--sm-mono); color: var(--sm-amber); margin: 4px 0;
 }
 
 /* ── Prevent ALL horizontal scroll ── */
@@ -463,13 +565,25 @@ body {
 
 /* ECG */
 .ecg-wrap {
-  background: #050f0a;
-  border: 1px solid rgba(0,200,100,0.25);
+  background: #040e08;
+  border: 1px solid rgba(0,200,100,0.28);
   border-radius: 14px;
   margin: 1em 0;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
   position: relative;
   box-shadow: 0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(0,200,100,0.1);
+}
+.ecg-canvas-wrap {
+  min-width: 700px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.ecg-canvas-wrap canvas {
+  display: block;
+  min-width: 700px;
 }
 .ecg-wrap::before {
   content: "ECG"; position: absolute; top: 8px; right: 12px;
@@ -495,19 +609,27 @@ body {
 ═══════════════════════════════════════════════════════ */
 #input-zone {
   flex-shrink: 0;
-  padding: 8px 12px 12px;
-  background: linear-gradient(0deg, var(--sm-surface), rgba(11,24,48,0.9));
+  padding: 8px 10px 10px;
+  background: linear-gradient(0deg, var(--sm-surface), rgba(11,24,48,0.92));
   border-top: 1px solid var(--sm-border);
   backdrop-filter: blur(10px);
 }
-.qp-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 7px; }
-.qp-btn {
-  padding: 3px 10px; font-size: 0.64rem; font-weight: 600;
-  border: 1px solid var(--sm-border); border-radius: 20px;
-  color: var(--sm-text3); background: transparent; cursor: pointer;
-  transition: all 0.15s; white-space: nowrap; font-family: var(--sm-sans);
+.btn-attach {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  background: rgba(20,184,166,0.06);
+  border: 1px solid var(--sm-border);
+  color: var(--sm-text3); font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s; align-self: flex-end;
 }
-.qp-btn:hover { border-color: rgba(20,184,166,0.4); color: var(--sm-text1); background: rgba(20,184,166,0.04); }
+.btn-attach:hover { border-color: rgba(20,184,166,0.4); color: var(--sm-teal); }
+.btn-attach.has-file { border-color: rgba(20,184,166,0.5); color: var(--sm-teal); background: rgba(20,184,166,0.1); }
+#msg-input {
+  min-height: 38px;
+  max-height: 160px;
+}
+.qp-row { display: none; } /* replaced by dropdown */
+#qp-select option { background: var(--sm-surface); color: var(--sm-text1); }
 .input-shell {
   background: rgba(20,184,166,0.03);
   border: 1px solid rgba(20,184,166,0.22);
@@ -849,12 +971,15 @@ body {
 
       <select id="spec-select" class="form-select form-select-sm" onchange="updateSpecialty(this.value)"></select>
 
-      <!-- Search & Mastery buttons -->
+      <!-- Search, Mastery, Theme, Voice buttons -->
       <button class="btn-ham" data-bs-toggle="modal" data-bs-target="#searchModal" title="Search all sessions" style="flex-shrink:0">
         <i class="bi bi-search" style="font-size:.85rem"></i>
       </button>
       <button class="btn-ham" data-bs-toggle="modal" data-bs-target="#masteryModal" onclick="renderMastery()" title="Mastery dashboard" style="flex-shrink:0">
         <i class="bi bi-graph-up-arrow" style="font-size:.85rem"></i>
+      </button>
+      <button class="btn-theme" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">
+        <i class="bi bi-sun-fill" id="theme-icon"></i>
       </button>
 
       <!-- Desktop tabs -->
@@ -1023,17 +1148,54 @@ body {
 
       <!-- Input zone (only shown in chat tab) -->
       <div id="input-zone">
-        <div class="qp-row" id="qp-row"></div>
+        <!-- Input row: attach + textarea + send -->
         <div class="d-flex gap-2 align-items-end">
+          <!-- Attach button -->
+          <button class="btn-attach" id="attach-btn" onclick="triggerAttach()" title="Attach document or image">
+            <i class="bi bi-paperclip"></i>
+          </button>
+          <input type="file" id="file-input" style="display:none"
+            accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.md"
+            onchange="handleFileAttach(this)"/>
+
           <div class="input-shell flex-grow-1">
-            <textarea id="msg-input" rows="3"
-              placeholder="Ask anything in medicine — topic, passage, ECG, drug mechanism, diagram…"
+            <!-- Attachment preview badge -->
+            <div id="attach-preview" style="display:none;padding:5px 12px 0;display:none">
+              <span id="attach-badge" style="display:inline-flex;align-items:center;gap:5px;background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.25);border-radius:20px;padding:2px 10px;font-size:.7rem;color:var(--sm-teal)">
+                <i class="bi bi-paperclip"></i>
+                <span id="attach-name"></span>
+                <button onclick="clearAttach()" style="background:none;border:none;color:var(--sm-text3);cursor:pointer;padding:0;font-size:.75rem;line-height:1"><i class="bi bi-x"></i></button>
+              </span>
+            </div>
+
+            <!-- Quick prompts dropdown -->
+            <div style="padding:5px 12px 0;position:relative">
+              <select id="qp-select" onchange="handleQPSelect(this)"
+                style="background:transparent;border:none;outline:none;color:var(--sm-text3);font-size:.72rem;font-family:var(--sm-sans);cursor:pointer;width:100%;-webkit-appearance:none;appearance:none">
+                <option value="">⚡ Quick prompts…</option>
+              </select>
+            </div>
+
+            <textarea id="msg-input" rows="2"
+              placeholder="Ask anything — topic, mechanism, ECG, drug, diagram, or attach a document…"
               onkeydown="handleKey(event)" oninput="updateCC()"></textarea>
             <div class="input-meta">
-              <span>Shift+Enter for new line · Enter to send</span>
+              <span>Enter to send · Shift+Enter new line</span>
               <span id="char-count" style="transition:color .2s">0/4000</span>
             </div>
           </div>
+
+          <!-- Voice input button -->
+          <button class="btn-voice" id="voice-btn" onclick="toggleVoice()" title="Voice input" style="display:none">
+            <i class="bi bi-mic-fill" id="voice-icon"></i>
+          </button>
+
+          <!-- Export PDF button -->
+          <button class="btn-send" id="export-btn" onclick="exportToPDF()" title="Export session to PDF"
+            style="display:none;background:rgba(167,139,250,0.15);border-color:rgba(167,139,250,0.35);color:#a78bfa">
+            <i class="bi bi-file-earmark-pdf"></i>
+          </button>
+
           <button class="btn-send" id="send-btn" onclick="sendMessage()" disabled>
             <i class="bi bi-arrow-up-short"></i>
           </button>
@@ -1051,7 +1213,7 @@ body {
         <button class="bnav-btn" id="bn-fc" onclick="switchTab('fc')"><i class="bi bi-collection"></i><span id="bn-fc-lbl">Cards</span></button>
         <button class="bnav-btn" id="bn-pearl" onclick="switchTab('pearl')"><i class="bi bi-star"></i><span>Pearls</span></button>
         <button class="bnav-btn" id="bn-exam" onclick="switchTab('exam')"><i class="bi bi-clipboard2-pulse"></i><span>USMLE</span></button>
-        <button class="bnav-btn" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="bi bi-search"></i><span>Search</span></button>
+        <button class="bnav-btn" data-bs-toggle="modal" data-bs-target="#featuresModal"><i class="bi bi-grid-3x3-gap-fill"></i><span>Tools</span></button>
       </div>
     </div>
 
@@ -1206,6 +1368,161 @@ body {
       </div>
       <div class="modal-body p-3" id="mastery-body" style="max-height:480px;overflow-y:auto">
         <div class="text-center py-3" style="color:var(--sm-text3);font-size:.82rem">Loading mastery data…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════ FEATURES MODAL (Virtual Patient, Diff Dx, Anchors, etc) ════════ -->
+<div class="modal fade" id="featuresModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:560px">
+    <div class="modal-content">
+      <div class="modal-header py-2 px-3">
+        <h6 class="modal-title mb-0" style="font-family:var(--sm-serif);font-style:italic">
+          <i class="bi bi-grid-3x3-gap-fill me-2" style="color:var(--sm-teal)"></i>SmartMedicine Tools
+        </h6>
+        <button class="btn p-0 ms-auto" data-bs-dismiss="modal" style="color:var(--sm-text3)"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body p-0">
+        <!-- Tab buttons -->
+        <div class="d-flex gap-2 p-3 border-bottom flex-wrap" style="border-color:var(--sm-border)!important">
+          <button class="feat-tab-btn active" id="ft-sim" onclick="featTab('sim',this)">🩺 Patient Sim</button>
+          <button class="feat-tab-btn" id="ft-diff" onclick="featTab('diff',this)">🔬 Diff Dx</button>
+          <button class="feat-tab-btn" id="ft-anchor" onclick="featTab('anchor',this)">⚓ Anchors</button>
+          <button class="feat-tab-btn" id="ft-heat" onclick="featTab('heat',this)">🎯 Weak Spots</button>
+          <button class="feat-tab-btn" id="ft-recon" onclick="featTab('recon',this)">🔁 Reconstruct</button>
+          <button class="feat-tab-btn" id="ft-bedside" onclick="featTab('bedside',this)">🏥 Bedside</button>
+        </div>
+
+        <!-- PATIENT SIMULATOR -->
+        <div id="fp-sim" class="p-3" style="max-height:420px;overflow-y:auto">
+          <div style="font-size:.78rem;color:var(--sm-text2);line-height:1.6;margin-bottom:.75rem">
+            A real clinical encounter. You are the doctor. SmartMedicine is the patient, nurse, and lab.
+            Ask questions, examine, order investigations. Make a diagnosis.
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap">
+            <select id="sim-specialty" class="form-select form-select-sm" style="max-width:160px;background:var(--sm-panel);border-color:var(--sm-border);color:var(--sm-text1);font-size:.76rem">
+              <option value="Cardiology">Cardiology</option>
+              <option value="Respiratory">Respiratory</option>
+              <option value="Nephrology">Nephrology</option>
+              <option value="Neurology">Neurology</option>
+              <option value="Endocrinology">Endocrinology</option>
+              <option value="Gastroenterology">Gastroenterology</option>
+              <option value="Infectious Disease">Infectious Disease</option>
+              <option value="Ghana Tropical">Ghana Tropical Medicine</option>
+            </select>
+            <select id="sim-difficulty" class="form-select form-select-sm" style="max-width:120px;background:var(--sm-panel);border-color:var(--sm-border);color:var(--sm-text1);font-size:.76rem">
+              <option value="Foundation">Foundation</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced USMLE">Advanced USMLE</option>
+              <option value="Consultant Level">Consultant Level</option>
+            </select>
+            <button class="btn btn-sm fw-bold" style="background:linear-gradient(135deg,rgba(20,184,166,0.2),rgba(0,130,100,0.15));border:1px solid rgba(20,184,166,0.35);color:var(--sm-teal);border-radius:8px;font-size:.75rem" onclick="startPatientSim()">
+              <i class="bi bi-person-fill me-1"></i>Start Encounter
+            </button>
+          </div>
+          <div id="sim-output" style="display:none">
+            <div id="sim-messages" style="margin-bottom:.75rem"></div>
+            <div class="d-flex gap-2">
+              <input type="text" id="sim-input" class="form-control form-control-sm"
+                placeholder="Ask patient, examine, or order: 'What brings you in?' / 'ECG' / 'FBC'"
+                style="background:var(--sm-panel);border-color:var(--sm-border);color:var(--sm-text1);font-size:.8rem"
+                onkeydown="if(event.key==='Enter')simSend()"/>
+              <button class="btn btn-sm" style="background:rgba(20,184,166,.15);border:1px solid rgba(20,184,166,.3);color:var(--sm-teal);border-radius:8px" onclick="simSend()">Send</button>
+            </div>
+            <div style="margin-top:.6rem;text-align:right">
+              <button class="btn btn-sm" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.25);color:var(--sm-amber);font-size:.72rem;border-radius:8px" onclick="simReveal()">
+                <i class="bi bi-lightbulb me-1"></i>Reveal Diagnosis + Teaching
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- DIFFERENTIAL DIAGNOSIS -->
+        <div id="fp-diff" class="p-3" style="display:none;max-height:420px;overflow-y:auto">
+          <div style="font-size:.78rem;color:var(--sm-text2);margin-bottom:.75rem">
+            Enter symptoms, signs, or investigations. Get a mechanistic differential ranked by probability with the one finding that separates each diagnosis.
+          </div>
+          <div class="d-flex gap-2 mb-2">
+            <textarea id="diff-input" class="form-control form-control-sm" rows="2"
+              placeholder="e.g. Chest pain, diaphoresis, nausea, 30 min, BP 90/60, diaphoretic..."
+              style="background:var(--sm-panel);border-color:var(--sm-border);color:var(--sm-text1);font-size:.8rem;resize:none"></textarea>
+            <button class="btn btn-sm align-self-end" style="background:rgba(20,184,166,.15);border:1px solid rgba(20,184,166,.3);color:var(--sm-teal);border-radius:8px;white-space:nowrap" onclick="runDiffDx()">
+              <i class="bi bi-search me-1"></i>Analyse
+            </button>
+          </div>
+          <div id="diff-output"></div>
+        </div>
+
+        <!-- ANCHOR LIBRARY -->
+        <div id="fp-anchor" class="p-3" style="display:none;max-height:420px;overflow-y:auto">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div style="font-size:.78rem;color:var(--sm-text2)">Your spatial anchors — pull one up before seeing a patient.</div>
+            <button class="btn btn-sm" style="background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.25);color:#a78bfa;font-size:.7rem;border-radius:8px" onclick="addAnchor()">
+              <i class="bi bi-plus me-1"></i>Add Anchor
+            </button>
+          </div>
+          <div id="anchor-list"></div>
+          <div id="anchor-empty" class="text-center py-4" style="color:var(--sm-text3);font-size:.8rem">
+            No anchors yet. Ask SmartMedicine to teach any concept and save its spatial anchor here.
+          </div>
+        </div>
+
+        <!-- WEAK SPOT TRACKER -->
+        <div id="fp-heat" class="p-3" style="display:none;max-height:420px;overflow-y:auto">
+          <div style="font-size:.78rem;color:var(--sm-text2);margin-bottom:.75rem">
+            Based on your USMLE attempts and flashcard performance. Red = weakest. Green = strongest.
+          </div>
+          <div id="heat-map"></div>
+          <div style="margin-top:1rem">
+            <button class="btn btn-sm w-100 fw-bold" style="background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.25);color:var(--sm-danger);border-radius:10px;font-size:.78rem" onclick="drillWeakSpot()">
+              <i class="bi bi-bullseye me-1"></i>Deep Drill on Weakest Topic Now
+            </button>
+          </div>
+        </div>
+
+        <!-- RECONSTRUCTION CHALLENGE -->
+        <div id="fp-recon" class="p-3" style="display:none;max-height:420px;overflow-y:auto">
+          <div style="font-size:.78rem;color:var(--sm-text2);margin-bottom:.75rem">
+            The hardest test: reconstruct a mechanism from scratch. No notes. Pure reasoning.
+          </div>
+          <div id="recon-challenge" class="challenge-box" style="display:none">
+            <div style="font-size:.65rem;font-weight:700;letter-spacing:.12em;color:var(--sm-text3);margin-bottom:.5rem;font-family:var(--sm-mono)">RECONSTRUCTION CHALLENGE</div>
+            <div id="recon-question" style="font-size:.92rem;font-weight:600;color:var(--sm-text1);line-height:1.65;margin-bottom:.75rem"></div>
+            <textarea id="recon-answer" class="form-control form-control-sm" rows="4"
+              placeholder="Reconstruct the full mechanism step by step — no looking up…"
+              style="background:rgba(0,0,0,0.2);border-color:var(--sm-border);color:var(--sm-text1);font-size:.82rem;resize:none"></textarea>
+            <div class="d-flex gap-2 mt-2">
+              <button class="btn btn-sm flex-grow-1 fw-bold" style="background:rgba(20,184,166,.15);border:1px solid rgba(20,184,166,.3);color:var(--sm-teal);border-radius:8px;font-size:.76rem" onclick="gradeReconstruction()">
+                <i class="bi bi-check2-circle me-1"></i>Grade My Reasoning
+              </button>
+              <button class="btn btn-sm" style="background:transparent;border:1px solid var(--sm-border);color:var(--sm-text3);border-radius:8px;font-size:.76rem" onclick="newReconChallenge()">
+                New Challenge
+              </button>
+            </div>
+          </div>
+          <div id="recon-result" style="display:none;margin-top:.75rem"></div>
+          <div class="text-center" id="recon-start">
+            <button class="btn-cta" style="font-size:.82rem;padding:10px 26px" onclick="newReconChallenge()">
+              <i class="bi bi-lightning-charge me-1"></i>Generate Challenge
+            </button>
+          </div>
+        </div>
+
+        <!-- BEDSIDE MODE -->
+        <div id="fp-bedside" class="p-3" style="display:none;max-height:420px;overflow-y:auto">
+          <div style="font-size:.78rem;color:var(--sm-text2);margin-bottom:.75rem">
+            At the bedside right now? Describe your findings. Get instant mechanistic explanation you can use immediately.
+          </div>
+          <textarea id="bedside-input" class="form-control form-control-sm" rows="3"
+            placeholder="e.g. 67yr male, JVP raised, bilateral crepitations, bilateral pitting oedema, S3 gallop, BP 95/60..."
+            style="background:var(--sm-panel);border-color:var(--sm-border);color:var(--sm-text1);font-size:.82rem;resize:none;margin-bottom:.6rem"></textarea>
+          <button class="btn btn-sm w-100 fw-bold" style="background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.25);color:var(--sm-danger);border-radius:10px;font-size:.8rem" onclick="runBedside()">
+            <i class="bi bi-heart-pulse-fill me-1"></i>Explain These Findings Now
+          </button>
+          <div id="bedside-output" style="margin-top:.75rem"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -2303,8 +2620,8 @@ function drawECG12Lead(id, text) {
   if (!canvas) return;
 
   var parent   = canvas.parentElement;
-  var W        = (parent ? parent.offsetWidth || 720 : 720);
-  if (W < 300) W = 720;
+  var W        = Math.max(720, (parent ? parent.offsetWidth || 720 : 720));
+  // Always render at full width for proper lead spacing
 
   // Layout: 3 rows × 4 leads + rhythm strip + header
   var HEADER_H = 52;
@@ -2712,6 +3029,822 @@ function drawECG12Lead(id, text) {
     ctx.fillText('INTERP: ' + snippet, 8, TOTAL_H - 5);
   }
 }
+
+
+
+/* ══ FIX: BUILD QP DROPDOWN (replaces pill row) ═══════════════════ */
+function buildQPRow() {
+  var sel = document.getElementById('qp-select');
+  if (!sel) return;
+  var QPS_DATA = [
+    {i:'🫀', l:'First Principles',   p:'Teach from absolute first principles (Layer 0 to 5): '},
+    {i:'📊', l:'Flowchart',          p:'Draw a detailed mermaid flowchart for the mechanism of: '},
+    {i:'⚡', l:'ECG',               p:'Draw a full 12-lead ECG and teach the mechanism of: '},
+    {i:'🔬', l:'Compare',           p:'Compare and find the exact divergence step between: '},
+    {i:'💊', l:'Drug Mechanism',     p:'Step-by-step drug mechanism from receptor to clinical effect: '},
+    {i:'🃏', l:'Generate Flashcards',p:'Generate 8 mechanistic flashcards on: '},
+    {i:'🩺', l:'Ward Round',         p:'Walk me into the ward — patient presents with: '},
+    {i:'🧬', l:'Basic Science',      p:'Explain from basic science first principles: '},
+    {i:'📋', l:'USMLE Vignette',     p:'Create a USMLE vignette question testing: '},
+    {i:'🔗', l:'Connect Concepts',   p:'Connect and show all relationships between: '},
+  ];
+  sel.innerHTML = '<option value="">⚡ Quick prompts…</option>';
+  QPS_DATA.forEach(function(q) {
+    var opt = document.createElement('option');
+    opt.value = q.p;
+    opt.textContent = q.i + ' ' + q.l;
+    sel.appendChild(opt);
+  });
+}
+
+function handleQPSelect(sel) {
+  if (!sel.value) return;
+  injectPrompt(sel.value);
+  sel.value = '';
+  document.getElementById('msg-input').focus();
+}
+
+/* ══ FIX 4: FILE ATTACHMENT ════════════════════════════════════════ */
+var attachedFile   = null;   // { name, type, dataUrl, text }
+var attachedStored = null;   // persists across tab switches
+
+function triggerAttach() {
+  document.getElementById('file-input').click();
+}
+
+function handleFileAttach(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var allowed = ['image/png','image/jpeg','image/gif','image/webp',
+                 'application/pdf','text/plain','text/markdown'];
+  var ext = file.name.split('.').pop().toLowerCase();
+  if (!allowed.includes(file.type) && !['txt','md','pdf'].includes(ext)) {
+    showToast('Unsupported file type. Use: PDF, PNG, JPG, GIF, TXT', 'danger');
+    return;
+  }
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    attachedFile = {
+      name:    file.name,
+      type:    file.type || 'text/plain',
+      size:    file.size,
+      dataUrl: e.target.result,
+    };
+    attachedStored = attachedFile; // persist across tab switches
+
+    // Show preview badge
+    var preview = document.getElementById('attach-preview');
+    var badge   = document.getElementById('attach-name');
+    if (preview) preview.style.display = 'block';
+    if (badge)   badge.textContent = file.name.length > 28 ? file.name.slice(0,25) + '…' : file.name;
+    document.getElementById('attach-btn').classList.add('has-file');
+    showToast('📎 ' + file.name + ' attached', 'teal');
+
+    // Auto-suggest prompt if input is empty
+    var inp = document.getElementById('msg-input');
+    if (inp && !inp.value.trim()) {
+      var isPDF   = file.type === 'application/pdf' || ext === 'pdf';
+      var isImage = file.type.startsWith('image/');
+      if (isPDF || ext === 'txt' || ext === 'md') {
+        inp.value = 'Explain this document from first principles using the Agbesi method. Identify all key concepts, mechanisms, and clinical pearls. Build layer by layer — do not summarise.';
+      } else if (isImage) {
+        inp.value = 'Analyse this image and explain everything you see from first principles. If it is an ECG or medical image, give a full systematic interpretation.';
+      }
+      updateCC();
+    }
+  };
+
+  // Read as data URL for images, text for text files
+  var isText = ['text/plain','text/markdown'].includes(file.type) || ['txt','md'].includes(ext);
+  if (isText) reader.readAsText(file);
+  else reader.readAsDataURL(file);
+}
+
+function clearAttach() {
+  attachedFile   = null;
+  attachedStored = null;
+  var preview = document.getElementById('attach-preview');
+  if (preview) preview.style.display = 'none';
+  document.getElementById('attach-btn').classList.remove('has-file');
+  var fi = document.getElementById('file-input');
+  if (fi) fi.value = '';
+  showToast('Attachment removed', 'amber');
+}
+
+// Restore attachment when switching back to chat tab
+function restoreAttachment() {
+  if (attachedStored && !attachedFile) {
+    attachedFile = attachedStored;
+    var preview = document.getElementById('attach-preview');
+    var badge   = document.getElementById('attach-name');
+    if (preview) preview.style.display = 'block';
+    if (badge)   badge.textContent = attachedFile.name.length > 28 ? attachedFile.name.slice(0,25) + '…' : attachedFile.name;
+    document.getElementById('attach-btn').classList.add('has-file');
+  }
+}
+
+/* ══ FIX 5: PDF EXPORT ══════════════════════════════════════════════ */
+async function exportToPDF() {
+  if (!messages || messages.length === 0) {
+    showToast('No content to export', 'amber');
+    return;
+  }
+
+  showToast('⏳ Preparing PDF export…', 'teal');
+
+  // Load jsPDF dynamically
+  if (!window.jsPDF) {
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    document.head.appendChild(script);
+    await new Promise(function(res) { script.onload = res; });
+  }
+
+  var doc = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  var pageW  = 210, pageH = 297, margin = 15;
+  var usableW = pageW - margin * 2;
+  var y = margin;
+
+  function addPage() { doc.addPage(); y = margin; }
+  function checkPage(needed) { if (y + needed > pageH - margin) addPage(); }
+
+  // ── Header ──
+  doc.setFillColor(5, 15, 26);
+  doc.rect(0, 0, pageW, 22, 'F');
+  doc.setTextColor(20, 184, 166);
+  doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text('SmartMedicine', margin, 13);
+  doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.setTextColor(100, 150, 200);
+  var topic = (activeTopic && activeTopic.title) ? activeTopic.title : 'Learning Session';
+  var spec  = (activeTopic && activeTopic.specialty) ? activeTopic.specialty : 'General';
+  doc.text(topic + '  ·  ' + spec + '  ·  Dr. Agbesi  ·  ' + new Date().toLocaleDateString(), margin, 20);
+  y = 32;
+
+  // ── Messages ──
+  messages.forEach(function(msg) {
+    if (!msg.content || msg.content.length < 5) return;
+    var clean = msg.content
+      .replace(/---FLASHCARDS---[\s\S]*?---END-FLASHCARDS---/g, '')
+      .replace(/```[a-z]*/g, '')
+      .replace(/```/g, '')
+      .replace(/[★⭐]/g, '* PEARL:')
+      .replace(/🇬🇭/g, '[GHANA]')
+      .replace(/📚/g, '[REF]')
+      .replace(/📋/g, '[CHECK]')
+      .replace(/[^\x00-\x7E]/g, function(c) {
+        // Keep common unicode, replace others
+        return c;
+      })
+      .trim();
+
+    checkPage(14);
+
+    if (msg.role === 'user') {
+      // User bubble
+      doc.setFillColor(0, 60, 40);
+      doc.setTextColor(180, 240, 200);
+      doc.setFontSize(9); doc.setFont('helvetica','bold');
+      var userLines = doc.splitTextToSize('Dr. Agbesi: ' + clean, usableW - 4);
+      var bH = userLines.length * 4.5 + 5;
+      checkPage(bH + 4);
+      doc.roundedRect(margin + 20, y, usableW - 20, bH, 2, 2, 'F');
+      doc.text(userLines, margin + 22, y + 5);
+      y += bH + 4;
+    } else {
+      // AI response — parse and render
+      doc.setTextColor(30, 30, 30);
+      doc.setFillColor(248, 250, 252);
+      doc.setFontSize(9); doc.setFont('helvetica','normal');
+
+      // Split into sections
+      var sections = clean.split(/\n(?=##|#|\n)/);
+      sections.forEach(function(section) {
+        var trimmed = section.trim();
+        if (!trimmed) return;
+
+        if (trimmed.startsWith('## ') || trimmed.startsWith('# ')) {
+          // Heading
+          checkPage(10);
+          doc.setFont('helvetica','bold');
+          doc.setFontSize(11);
+          doc.setTextColor(20, 120, 100);
+          var hText = trimmed.replace(/^#+\s*/,'');
+          doc.text(hText.slice(0, 80), margin, y);
+          y += 7;
+          doc.setTextColor(30, 30, 30);
+          doc.setFont('helvetica','normal');
+          doc.setFontSize(9);
+        } else if (trimmed.startsWith('* PEARL:')) {
+          // Pearl
+          checkPage(12);
+          doc.setFillColor(255, 248, 220);
+          doc.setTextColor(140, 90, 0);
+          doc.setFont('helvetica','bolditalic');
+          var pLines = doc.splitTextToSize('★ ' + trimmed.slice(8), usableW - 6);
+          var pH = pLines.length * 4.5 + 4;
+          doc.roundedRect(margin, y, usableW, pH, 2, 2, 'F');
+          doc.text(pLines, margin + 3, y + 4);
+          y += pH + 3;
+          doc.setTextColor(30, 30, 30);
+          doc.setFont('helvetica','normal');
+        } else {
+          // Normal paragraph
+          var paraLines = doc.splitTextToSize(trimmed, usableW);
+          var paraH = paraLines.length * 4.5;
+          checkPage(paraH + 3);
+          doc.text(paraLines, margin, y);
+          y += paraH + 3;
+        }
+      });
+
+      // Add ECG canvases
+      document.querySelectorAll('.ecg-wrap canvas').forEach(function(canvas) {
+        try {
+          var imgData = canvas.toDataURL('image/png');
+          var cW = 160, cH = Math.round(canvas.height / canvas.width * cW);
+          checkPage(cH + 8);
+          doc.setFillColor(4, 14, 8);
+          doc.rect(margin, y, cW, cH, 'F');
+          doc.addImage(imgData, 'PNG', margin, y, cW, cH);
+          doc.setFontSize(7); doc.setTextColor(80, 80, 80);
+          doc.text('ECG — SmartMedicine', margin, y + cH + 3);
+          y += cH + 8;
+        } catch(e) {}
+      });
+
+      y += 2;
+      // Separator
+      doc.setDrawColor(200, 230, 220);
+      doc.line(margin, y, pageW - margin, y);
+      y += 4;
+    }
+  });
+
+  // ── Flashcards section ──
+  if (flashcards && flashcards.length > 0) {
+    addPage();
+    doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.setTextColor(20, 120, 100);
+    doc.text('Flashcards — ' + flashcards.length + ' cards', margin, y); y += 10;
+
+    flashcards.forEach(function(fc, i) {
+      checkPage(20);
+      doc.setFillColor(230, 245, 255);
+      doc.setFontSize(8); doc.setFont('helvetica','bold');
+      doc.setTextColor(0, 60, 120);
+      var qLines = doc.splitTextToSize('Q: ' + fc.front, usableW - 4);
+      var aLines = doc.splitTextToSize('A: ' + fc.back,  usableW - 4);
+      var cardH = (qLines.length + aLines.length) * 4 + 8;
+      doc.roundedRect(margin, y, usableW, cardH, 2, 2, 'F');
+      doc.text(qLines, margin + 3, y + 4);
+      doc.setFillColor(220, 240, 230);
+      doc.setTextColor(0, 80, 40);
+      doc.rect(margin, y + qLines.length*4+4, usableW, aLines.length*4+4, 'F');
+      doc.text(aLines, margin + 3, y + qLines.length*4 + 8);
+      y += cardH + 4;
+    });
+  }
+
+  // ── Footer ──
+  var pageCount = doc.internal.getNumberOfPages();
+  for (var p = 1; p <= pageCount; p++) {
+    doc.setPage(p);
+    doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.setTextColor(150, 150, 150);
+    doc.text('SmartMedicine · Dr. Agbesi · Page ' + p + ' of ' + pageCount, margin, pageH - 8);
+  }
+
+  var filename = (activeTopic ? activeTopic.title.replace(/[^a-z0-9]/gi,'_').slice(0,40) : 'SmartMedicine') + '_' + new Date().toISOString().slice(0,10) + '.pdf';
+  doc.save(filename);
+  showToast('✅ PDF exported: ' + filename, 'teal');
+}
+
+/* ══ FIX: PATCH sendMessage to include file attachment ═════════════ */
+var _baseSendMessage = sendMessage;
+sendMessage = async function() {
+  // If there's an attachment, include it in the request
+  if (attachedFile) {
+    var el  = document.getElementById('msg-input');
+    var txt = el.value.trim();
+    if (!txt || loading || !activeId) return;
+
+    el.value = ''; updateCC();
+    var fileInfo = '[Attached file: ' + attachedFile.name + ' (' + attachedFile.type + ')]\n\n';
+    var msgContent = txt;
+
+    messages.push({ role:'user', content: fileInfo + msgContent });
+    messages.push({ role:'assistant', content:'' });
+    renderMessages(); scrollBottom(); setLoading(true);
+
+    var hist = messages.slice(0,-1).map(function(m) { return { role:m.role, content:m.content }; });
+
+    // Build message with file content
+    var userMsg;
+    if (attachedFile.type.startsWith('image/')) {
+      // Image — send as vision message
+      userMsg = {
+        role: 'user',
+        content: [
+          { type:'image', source:{ type:'base64', media_type: attachedFile.type, data: attachedFile.dataUrl.split(',')[1] } },
+          { type:'text', text: msgContent }
+        ]
+      };
+    } else {
+      // Text/PDF — include as text
+      userMsg = { role:'user', content: fileInfo + msgContent };
+    }
+
+    hist[hist.length-1] = userMsg;
+
+    try {
+      var abortCtrl2 = new AbortController();
+      abortCtrl = abortCtrl2;
+      var res = await fetch(API + '/chat', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ messages: hist, topic_id: activeId }),
+        signal: abortCtrl2.signal
+      });
+      if (!res.ok) { var t2=await res.text(); throw new Error('Server '+res.status+': '+t2.slice(0,100)); }
+      var reader2 = res.body.getReader(), dec2 = new TextDecoder(), buf2='';
+      while(true){
+        var rv2=await reader2.read(); if(rv2.done)break;
+        buf2+=dec2.decode(rv2.value,{stream:true});
+        var lines2=buf2.split('\n'); buf2=lines2.pop()||'';
+        for(var li=0;li<lines2.length;li++){
+          if(!lines2[li].startsWith('data: '))continue;
+          try{var d2=JSON.parse(lines2[li].slice(6));if(d2.type==='delta'){messages[messages.length-1].content+=d2.text;updateLastBubble();}if(d2.type==='done'){try{flashcards=await safeFetch(API+'/flashcards/topic/'+activeId);renderFlashcards();updateTabLabels();await loadTopics();}catch(e){}var fm=messages[messages.length-1];if(fm&&fm.role==='assistant'&&fm.content){extractAndSavePearls(fm.content,activeId,activeTopic?activeTopic.specialty:'General');}}}catch(e){}
+        }
+      }
+    } catch(e) {
+      if(e.name!=='AbortError'){messages[messages.length-1].content='❌ '+e.message;renderMessages();showToast('⚠ '+e.message,'danger');}
+    }
+    setLoading(false); scrollBottom();
+
+    // Keep attachment until user clears it (persistence fix)
+    // Don't auto-clear: user may want to ask more questions about same document
+    document.getElementById('export-btn').style.display = 'flex';
+    return;
+  }
+  // No attachment — call original
+  _baseSendMessage.call(this);
+  // Show export button after sending
+  if (messages.length > 2) document.getElementById('export-btn').style.display = 'flex';
+};
+
+/* ══ FIX: PATCH switchTab to restore attachment ════════════════════ */
+var _storedSwitchTab = switchTab;
+switchTab = function(tab) {
+  _storedSwitchTab(tab);
+  if (tab === 'chat') {
+    restoreAttachment();
+    if (messages.length > 2) {
+      var eb = document.getElementById('export-btn');
+      if (eb) eb.style.display = 'flex';
+    }
+  }
+};
+
+
+
+/* ══ LIGHT / DARK THEME TOGGLE ═══════════════════════════════════ */
+var isLightMode = false;
+function toggleTheme() {
+  isLightMode = !isLightMode;
+  document.body.classList.toggle('light-mode', isLightMode);
+  var icon = document.getElementById('theme-icon');
+  if (icon) icon.className = isLightMode ? 'bi bi-moon-fill' : 'bi bi-sun-fill';
+  try { localStorage.setItem('sm_theme', isLightMode ? 'light' : 'dark'); } catch(e) {}
+}
+function loadTheme() {
+  try {
+    var saved = localStorage.getItem('sm_theme');
+    if (saved === 'light') { isLightMode = true; document.body.classList.add('light-mode'); var icon = document.getElementById('theme-icon'); if(icon) icon.className = 'bi bi-moon-fill'; }
+  } catch(e) {}
+}
+
+/* ══ VOICE INPUT ══════════════════════════════════════════════════ */
+var voiceRecog = null, voiceActive = false;
+function initVoice() {
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return;
+  document.getElementById('voice-btn').style.display = 'flex';
+  voiceRecog = new SpeechRecognition();
+  voiceRecog.continuous = false;
+  voiceRecog.lang = 'en-GB';
+  voiceRecog.interimResults = false;
+  voiceRecog.onresult = function(e) {
+    var transcript = e.results[0][0].transcript;
+    var inp = document.getElementById('msg-input');
+    inp.value = (inp.value ? inp.value + ' ' : '') + transcript;
+    updateCC(); inp.focus();
+  };
+  voiceRecog.onend = function() {
+    voiceActive = false;
+    var btn = document.getElementById('voice-btn'), ico = document.getElementById('voice-icon');
+    if (btn) btn.classList.remove('recording');
+    if (ico) ico.className = 'bi bi-mic-fill';
+  };
+  voiceRecog.onerror = function() { voiceActive = false; showToast('Voice input error', 'danger'); };
+}
+function toggleVoice() {
+  if (!voiceRecog) { showToast('Voice input not supported in this browser', 'amber'); return; }
+  if (voiceActive) { voiceRecog.stop(); }
+  else {
+    voiceActive = true;
+    var btn = document.getElementById('voice-btn'), ico = document.getElementById('voice-icon');
+    if (btn) btn.classList.add('recording');
+    if (ico) ico.className = 'bi bi-stop-fill';
+    showToast('🎙 Listening…', 'teal');
+    try { voiceRecog.start(); } catch(e) { voiceActive = false; }
+  }
+}
+
+/* ══ FEATURES MODAL TAB SWITCHER ═════════════════════════════════ */
+var featPanes = ['sim','diff','anchor','heat','recon','bedside'];
+function featTab(name, btn) {
+  featPanes.forEach(function(p) {
+    var el = document.getElementById('fp-' + p);
+    var b  = document.getElementById('ft-' + p);
+    if (el) el.style.display = p === name ? 'block' : 'none';
+    if (b)  b.classList.toggle('active', p === name);
+  });
+  if (name === 'anchor') renderAnchors();
+  if (name === 'heat')   renderHeatMap();
+}
+
+/* ══ VIRTUAL PATIENT SIMULATOR ═══════════════════════════════════ */
+var simMessages = [], simCase = null, simReveal = null;
+function startPatientSim() {
+  var spec = document.getElementById('sim-specialty').value;
+  var diff = document.getElementById('sim-difficulty').value;
+  simMessages = [];
+  simCase = null;
+  document.getElementById('sim-output').style.display = 'block';
+  document.getElementById('sim-messages').innerHTML = '';
+  simAddMsg('system', '🩺 Starting ' + diff + ' encounter in ' + spec + '…');
+  var prompt = 'You are running a clinical simulation for Dr. Agbesi. Generate a realistic ' + diff + ' level patient case in ' + spec + ' (Ghana context where relevant). '
+    + 'Start by describing the patient walking in: age, sex, chief complaint, and first impression. '
+    + 'Do NOT give the diagnosis. Dr. Agbesi will question and examine. Respond AS the patient/nurse/lab. '
+    + 'Keep responses concise (2-4 sentences). When Dr. Agbesi orders investigations, give realistic results. '
+    + 'Format: START WITH one paragraph describing the patient walking in. End with: "What would you like to do first?"';
+  runSimTurn(prompt, true);
+}
+function simAddMsg(role, text) {
+  var div = document.createElement('div');
+  div.className = role === 'doctor' ? 'bubble-user text-end mb-2' : 'patient-bubble mb-2';
+  div.style.cssText = role === 'doctor' ? 'background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.2);border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:.85rem;color:var(--sm-text1)' : '';
+  div.innerHTML = (role === 'doctor' ? '<strong style="color:var(--sm-teal)">Dr. Agbesi:</strong> ' : '<strong style="color:#a78bfa">Patient/Nurse:</strong> ') + esc(text);
+  document.getElementById('sim-messages').appendChild(div);
+  div.scrollIntoView({ behavior:'smooth' });
+}
+async function runSimTurn(prompt, isFirst) {
+  var msgs = isFirst ? [{ role:'user', content: prompt }]
+    : simMessages.concat([{ role:'user', content: document.getElementById('sim-input').value.trim() }]);
+  if (!isFirst) { simAddMsg('doctor', document.getElementById('sim-input').value.trim()); document.getElementById('sim-input').value = ''; }
+  simMessages = msgs;
+  var loadDiv = document.createElement('div');
+  loadDiv.className = 'patient-bubble mb-2';
+  loadDiv.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  document.getElementById('sim-messages').appendChild(loadDiv);
+  try {
+    var res = await fetch(API + '/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages: msgs, topic_id: null }) });
+    var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', full = '';
+    while(true) { var rv = await reader.read(); if(rv.done) break; buf += dec.decode(rv.value,{stream:true}); var lines = buf.split('\n'); buf = lines.pop()||''; for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}} }
+    loadDiv.remove();
+    simAddMsg('patient', full.trim());
+    simMessages.push({ role:'assistant', content: full });
+    simCase = { messages: simMessages, specialty: document.getElementById('sim-specialty').value };
+  } catch(e) { loadDiv.remove(); simAddMsg('system', 'Error: ' + e.message); }
+}
+function simSend() {
+  var txt = document.getElementById('sim-input').value.trim();
+  if (!txt) return;
+  runSimTurn(null, false);
+}
+function simRevealDiagnosis() {
+  if (!simCase) return;
+  var revPrompt = 'The clinical encounter is over. Now reveal the diagnosis and teach Dr. Agbesi every step: '
+    + '1) The diagnosis and why 2) Every finding explained mechanistically from first principles '
+    + '3) What he got right and what he missed 4) How to never miss this again. Be thorough and verbose.';
+  var featModal = bootstrap.Modal.getInstance(document.getElementById('featuresModal'));
+  if (featModal) featModal.hide();
+  setTimeout(function() {
+    if (!activeId) { newSession(revPrompt); } 
+    else { injectPrompt(revPrompt); sendMessage(); }
+  }, 400);
+}
+
+/* ══ DIFFERENTIAL DIAGNOSIS ENGINE ══════════════════════════════ */
+async function runDiffDx() {
+  var symptoms = document.getElementById('diff-input').value.trim();
+  if (!symptoms) { showToast('Enter symptoms first', 'amber'); return; }
+  var out = document.getElementById('diff-output');
+  out.innerHTML = '<div class="typing-dots justify-content-center py-3"><span></span><span></span><span></span></div>';
+  var prompt = 'Dr. Agbesi presents this clinical picture: "' + symptoms + '". '
+    + 'Generate a RANKED differential diagnosis (top 6 conditions). For EACH condition provide: '
+    + '1) Condition name 2) Probability rank (High/Medium/Low) 3) The core mechanism in ONE sentence '
+    + '4) The ONE clinical finding or investigation that confirms OR excludes this diagnosis. '
+    + 'Format EXACTLY as: DIAGNOSIS: [name] | PROBABILITY: [High/Medium/Low] | MECHANISM: [one sentence] | KEY FINDING: [one finding] '
+    + 'Then after all 6, add SEPARATOR: and a full mechanistic teaching paragraph about the most likely diagnosis.';
+  try {
+    var res = await fetch(API + '/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages:[{role:'user',content:prompt}], topic_id:null }) });
+    var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', full = '';
+    while(true){var rv=await reader.read();if(rv.done)break;buf+=dec.decode(rv.value,{stream:true});var lines=buf.split('\n');buf=lines.pop()||'';for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}}}
+    renderDiffDx(full, out);
+  } catch(e) { out.innerHTML = '<div style="color:var(--sm-danger);font-size:.8rem">Error: ' + esc(e.message) + '</div>'; }
+}
+function renderDiffDx(text, out) {
+  var colors = { 'High':'var(--sm-danger)', 'Medium':'var(--sm-amber)', 'Low':'var(--sm-teal)' };
+  var lines = text.split('\n').filter(function(l) { return l.indexOf('DIAGNOSIS:') > -1; });
+  var sepIdx = text.indexOf('SEPARATOR:');
+  var teaching = sepIdx > -1 ? text.slice(sepIdx + 10).trim() : '';
+  var html2 = '';
+  lines.forEach(function(line, i) {
+    var diag = (line.match(/DIAGNOSIS:\s*([^|]+)/) || [])[1] || '';
+    var prob = (line.match(/PROBABILITY:\s*([^|]+)/) || [])[1] || '';
+    var mech = (line.match(/MECHANISM:\s*([^|]+)/) || [])[1] || '';
+    var key  = (line.match(/KEY FINDING:\s*(.+)/) || [])[1] || '';
+    if (!diag) return;
+    var col = colors[prob.trim()] || 'var(--sm-text3)';
+    html2 += '<div class="diff-card" onclick="learnDiff(\'' + diag.trim().replace(/'/g,"\\'") + '\')">';
+    html2 += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
+    html2 += '<span style="font-size:.75rem;font-weight:800;color:' + col + ';font-family:var(--sm-mono)">' + (i+1) + '. ' + esc(diag.trim()) + '</span>';
+    html2 += '<span class="diff-prob ms-auto" style="color:' + col + '">' + esc(prob.trim()) + '</span></div>';
+    html2 += '<div style="font-size:.75rem;color:var(--sm-text2);margin-bottom:3px">⚙ ' + esc(mech.trim()) + '</div>';
+    if (key) html2 += '<div style="font-size:.73rem;color:var(--sm-text3)">🔑 ' + esc(key.trim()) + '</div>';
+    html2 += '</div>';
+  });
+  if (teaching) {
+    html2 += '<div class="challenge-box mt-2"><div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;color:var(--sm-text3);margin-bottom:.4rem;font-family:var(--sm-mono)">MOST LIKELY — MECHANISM</div>';
+    html2 += '<div style="font-size:.82rem;color:var(--sm-text1);line-height:1.7">' + esc(teaching.slice(0,600)) + '</div></div>';
+  }
+  out.innerHTML = html2 || '<div style="color:var(--sm-text3);font-size:.8rem">Could not parse response. Try again.</div>';
+}
+function learnDiff(condition) {
+  var featModal = bootstrap.Modal.getInstance(document.getElementById('featuresModal'));
+  if (featModal) featModal.hide();
+  setTimeout(function() {
+    var prompt = 'Teach me ' + condition + ' from absolute first principles — Layer 0 to Layer 5. Include 12-lead ECG if cardiac. Be verbose and thorough.';
+    if (!activeId) newSession(prompt);
+    else { injectPrompt(prompt); sendMessage(); }
+  }, 400);
+}
+
+/* ══ CLINICAL ANCHOR LIBRARY ═════════════════════════════════════ */
+var anchors = [];
+function loadAnchors() {
+  try { anchors = JSON.parse(localStorage.getItem('sm_anchors') || '[]'); } catch(e) { anchors = []; }
+}
+function saveAnchors() {
+  try { localStorage.setItem('sm_anchors', JSON.stringify(anchors)); } catch(e) {}
+}
+function renderAnchors() {
+  loadAnchors();
+  var list = document.getElementById('anchor-list');
+  var empty = document.getElementById('anchor-empty');
+  if (!list) return;
+  if (anchors.length === 0) { list.innerHTML = ''; if(empty) empty.style.display = 'block'; return; }
+  if (empty) empty.style.display = 'none';
+  list.innerHTML = anchors.map(function(a, i) {
+    return '<div class="anchor-card">'
+      + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'
+      + '<div><div style="font-size:.78rem;font-weight:700;color:#a78bfa;margin-bottom:3px">⚓ ' + esc(a.concept) + '</div>'
+      + '<div style="font-size:.8rem;color:var(--sm-text1);line-height:1.6">' + esc(a.anchor) + '</div>'
+      + (a.specialty ? '<span class="badge rounded-pill sp-' + a.specialty.replace(/ /g,'_') + ' mt-1" style="font-size:.54rem">' + esc(a.specialty) + '</span>' : '') + '</div>'
+      + '<button onclick="deleteAnchor(' + i + ')" style="background:none;border:none;color:var(--sm-text3);cursor:pointer;font-size:.75rem;flex-shrink:0"><i class="bi bi-trash"></i></button>'
+      + '</div></div>';
+  }).join('');
+}
+function addAnchor() {
+  var concept = prompt('Concept (e.g. Coronary Anatomy):');
+  if (!concept) return;
+  var anchor = prompt('Your spatial anchor for this concept:');
+  if (!anchor) return;
+  loadAnchors();
+  anchors.unshift({ concept: concept, anchor: anchor, specialty: activeTopic ? activeTopic.specialty : 'General', date: new Date().toISOString() });
+  saveAnchors();
+  renderAnchors();
+  showToast('⚓ Anchor saved!', 'teal');
+}
+function deleteAnchor(i) {
+  loadAnchors();
+  anchors.splice(i, 1);
+  saveAnchors();
+  renderAnchors();
+}
+// Auto-extract anchors from AI responses
+function extractAnchors(text, specialty) {
+  if (!text) return;
+  var re = /[Ss]patial anchor[^:]*:\s*([^\n]+)/g;
+  var m;
+  while ((m = re.exec(text)) !== null) {
+    var anchor = m[1].trim().replace(/[*_]/g,'');
+    var conceptMatch = text.match(/(?:for |about |of )([A-Z][^.]+?)(?:\s+is\s+|\s*—\s*|\s*:\s*)/);
+    var concept = conceptMatch ? conceptMatch[1].trim() : (activeTopic ? activeTopic.title : 'Concept');
+    if (anchor.length > 10) {
+      loadAnchors();
+      var exists = anchors.some(function(a) { return a.anchor === anchor; });
+      if (!exists) {
+        anchors.unshift({ concept: concept, anchor: anchor, specialty: specialty || 'General', date: new Date().toISOString() });
+        saveAnchors();
+      }
+    }
+  }
+}
+
+/* ══ WEAK SPOT HEAT MAP ══════════════════════════════════════════ */
+var weakSpotData = {};
+function loadWeakSpots() {
+  try { weakSpotData = JSON.parse(localStorage.getItem('sm_weakspots') || '{}'); } catch(e) { weakSpotData = {}; }
+}
+function saveWeakSpots() {
+  try { localStorage.setItem('sm_weakspots', JSON.stringify(weakSpotData)); } catch(e) {}
+}
+function recordExamResult(specialty, correct) {
+  loadWeakSpots();
+  if (!weakSpotData[specialty]) weakSpotData[specialty] = { correct:0, total:0 };
+  weakSpotData[specialty].total++;
+  if (correct) weakSpotData[specialty].correct++;
+  saveWeakSpots();
+}
+function renderHeatMap() {
+  loadWeakSpots();
+  var el = document.getElementById('heat-map');
+  if (!el) return;
+  var specs = ['Cardiology','Respiratory','Nephrology','Neurology','Endocrinology','Haematology',
+               'Gastroenterology','Pharmacology','Infectious Disease','Surgery','Obstetrics',
+               'Paediatrics','Psychiatry','Anatomy','Physiology','Biochemistry','Pathology','Microbiology'];
+  var html2 = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">';
+  var hasData = false;
+  specs.forEach(function(s) {
+    var d = weakSpotData[s];
+    var pct = d && d.total > 0 ? Math.round(d.correct / d.total * 100) : -1;
+    var bg, col;
+    if (pct === -1)       { bg = 'rgba(255,255,255,0.04)'; col = 'var(--sm-text3)'; }
+    else if (pct < 40)    { bg = 'rgba(244,63,94,0.2)';  col = '#fda4af'; hasData = true; }
+    else if (pct < 70)    { bg = 'rgba(245,158,11,0.2)'; col = '#fcd34d'; hasData = true; }
+    else                  { bg = 'rgba(20,184,166,0.15)'; col = '#5eead4'; hasData = true; }
+    var label = pct === -1 ? 'No data' : pct + '%';
+    html2 += '<div class="heat-cell" style="background:' + bg + ';color:' + col + '" onclick="drillTopic(\'' + s + '\')" title="' + s + '">'
+      + '<div style="font-size:.62rem;margin-bottom:2px">' + esc(s.replace(/ /g,'\n').slice(0,14)) + '</div>'
+      + '<div style="font-size:.78rem;font-weight:800">' + label + '</div>'
+      + (d && d.total > 0 ? '<div style="font-size:.58rem;opacity:.6">' + d.correct + '/' + d.total + '</div>' : '') + '</div>';
+  });
+  html2 += '</div>';
+  if (!hasData) {
+    html2 += '<div style="text-align:center;margin-top:.75rem;font-size:.78rem;color:var(--sm-text3)">Answer USMLE questions in the exam tab to build your heat map.</div>';
+  }
+  el.innerHTML = html2;
+}
+function drillWeakSpot() {
+  loadWeakSpots();
+  var worst = null, worstPct = 100;
+  for (var s in weakSpotData) {
+    var d = weakSpotData[s];
+    if (d.total > 0) {
+      var pct = d.correct / d.total;
+      if (pct < worstPct) { worstPct = pct; worst = s; }
+    }
+  }
+  if (!worst) { showToast('Answer some USMLE questions first to identify weak spots', 'amber'); return; }
+  var featModal = bootstrap.Modal.getInstance(document.getElementById('featuresModal'));
+  if (featModal) featModal.hide();
+  setTimeout(function() { drillTopic(worst); }, 400);
+}
+function drillTopic(spec) {
+  var featModal = bootstrap.Modal.getInstance(document.getElementById('featuresModal'));
+  if (featModal) featModal.hide();
+  setTimeout(function() {
+    var prompt = 'I am weak in ' + spec + '. Teach me the highest-yield USMLE mechanisms in ' + spec + ' from absolute first principles. Focus on the concepts I most commonly get wrong. Be extremely thorough and verbose.';
+    if (!activeId) newSession(prompt);
+    else { injectPrompt(prompt); sendMessage(); }
+  }, 400);
+}
+
+/* ══ RECONSTRUCTION CHALLENGE ════════════════════════════════════ */
+var reconTopics = [];
+async function newReconChallenge() {
+  document.getElementById('recon-start').style.display = 'none';
+  document.getElementById('recon-challenge').style.display = 'block';
+  document.getElementById('recon-result').style.display = 'none';
+  document.getElementById('recon-answer').value = '';
+  document.getElementById('recon-question').textContent = '⟳ Generating challenge…';
+  var spec = activeTopic ? activeTopic.specialty : 'General Medicine';
+  var prompt = 'Generate ONE hard reconstruction challenge for Dr. Agbesi about ' + spec + '. '
+    + 'Format: a clinical scenario where a patient presents with specific findings, '
+    + 'and Dr. Agbesi must reconstruct the FULL mechanism from molecular level to bedside. '
+    + 'Output ONLY the challenge question itself — no answer, no preamble. '
+    + 'Example: "A 45yr diabetic presents with DKA. Reconstruct from insulin deficiency at the '
+    + 'receptor level all the way to Kussmaul breathing and the anion gap acidosis." '
+    + 'Make it challenging, specific, and mechanistically rich.';
+  try {
+    var res = await fetch(API + '/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages:[{role:'user',content:prompt}], topic_id:null }) });
+    var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', full = '';
+    while(true){var rv=await reader.read();if(rv.done)break;buf+=dec.decode(rv.value,{stream:true});var lines=buf.split('\n');buf=lines.pop()||'';for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}}}
+    document.getElementById('recon-question').textContent = full.trim();
+  } catch(e) { document.getElementById('recon-question').textContent = 'Error generating challenge. Try again.'; }
+}
+async function gradeReconstruction() {
+  var question = document.getElementById('recon-question').textContent;
+  var answer   = document.getElementById('recon-answer').value.trim();
+  if (!answer || answer.length < 20) { showToast('Write your reconstruction first', 'amber'); return; }
+  var resultEl = document.getElementById('recon-result');
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '<div class="typing-dots py-2"><span></span><span></span><span></span></div>';
+  var prompt = 'Grade Dr. Agbesi\'s reconstruction attempt. QUESTION: ' + question + '\nHIS ANSWER: ' + answer
+    + '\n\nGrade it: 1) What he got RIGHT (specific steps) 2) What he MISSED (specific gaps) '
+    + '3) What was WRONG mechanistically 4) The FULL correct reconstruction from first principles '
+    + '5) A score out of 10 with justification. Be thorough and encouraging but precise.';
+  try {
+    var res = await fetch(API + '/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages:[{role:'user',content:prompt}], topic_id:null }) });
+    var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', full = '';
+    while(true){var rv=await reader.read();if(rv.done)break;buf+=dec.decode(rv.value,{stream:true});var lines=buf.split('\n');buf=lines.pop()||'';for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}}}
+    resultEl.innerHTML = '<div class="challenge-box"><div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;color:var(--sm-text3);margin-bottom:.4rem;font-family:var(--sm-mono)">GRADING RESULT</div><div style="font-size:.84rem;color:var(--sm-text1);line-height:1.75">' + esc(full.trim()) + '</div></div>';
+  } catch(e) { resultEl.innerHTML = '<div style="color:var(--sm-danger);font-size:.8rem">' + esc(e.message) + '</div>'; }
+}
+
+/* ══ BEDSIDE MODE ════════════════════════════════════════════════ */
+async function runBedside() {
+  var findings = document.getElementById('bedside-input').value.trim();
+  if (!findings) { showToast('Describe your patient findings first', 'amber'); return; }
+  var out = document.getElementById('bedside-output');
+  out.innerHTML = '<div class="typing-dots py-2"><span></span><span></span><span></span></div>';
+  var prompt = 'BEDSIDE MODE — Dr. Agbesi is at the bedside RIGHT NOW with a patient. '
+    + 'Clinical findings: "' + findings + '". '
+    + 'Give him: 1) Most likely diagnosis and immediate mechanism (2-3 sentences) '
+    + '2) The ONE most important thing to do RIGHT NOW and why mechanistically '
+    + '3) Red flags to watch for in the next 30 minutes and why '
+    + '4) Quick 3-point teaching to never forget this presentation. '
+    + 'Be concise, actionable, and mechanistic. This is the bedside — not a lecture.';
+  try {
+    var res = await fetch(API + '/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages:[{role:'user',content:prompt}], topic_id:null }) });
+    var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', full = '';
+    while(true){var rv=await reader.read();if(rv.done)break;buf+=dec.decode(rv.value,{stream:true});var lines=buf.split('\n');buf=lines.pop()||'';for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}}}
+    out.innerHTML = '<div class="challenge-box">' + esc(full.trim()) + '</div>';
+    // Save to learning session
+    if (activeId) {
+      var anchor = findings.slice(0,80);
+      loadAnchors();
+      anchors.unshift({ concept:'Bedside Case: '+anchor, anchor:full.slice(0,200), specialty: activeTopic ? activeTopic.specialty : 'General', date: new Date().toISOString() });
+      saveAnchors();
+    }
+  } catch(e) { out.innerHTML = '<div style="color:var(--sm-danger);font-size:.8rem">' + esc(e.message) + '</div>'; }
+}
+
+/* ══ CROSS-SPECIALTY CONNECTOR (auto-runs after each session) ════ */
+function checkCrossConnections(text, specialty) {
+  if (!text || !topics || topics.length < 2) return;
+  var keywords = extractKeywords(text);
+  var related = topics.filter(function(t) {
+    return t.id !== activeId && t.specialty !== specialty && keywords.some(function(k) { return t.title.toLowerCase().indexOf(k) > -1; });
+  });
+  if (related.length > 0 && related.length < 4) {
+    var names = related.slice(0,2).map(function(t) { return '"' + t.title + '"'; }).join(' and ');
+    setTimeout(function() {
+      showToast('🔗 Connected to your session on ' + names, 'amber');
+    }, 2000);
+  }
+}
+function extractKeywords(text) {
+  var stopwords = ['the','and','for','that','this','with','from','have','been','which','they','will','are','its'];
+  return text.toLowerCase().replace(/[^a-z ]/g,' ').split(' ')
+    .filter(function(w) { return w.length > 5 && stopwords.indexOf(w) === -1; })
+    .slice(0, 20);
+}
+
+/* ══ PATCH: updateLastBubble — add anchor + cross-connect detection */
+var _prevUpdateLastBubble = updateLastBubble;
+updateLastBubble = function() {
+  _prevUpdateLastBubble();
+  var last = messages[messages.length - 1];
+  if (last && last.role === 'assistant' && last.content) {
+    extractAnchors(last.content, activeTopic ? activeTopic.specialty : 'General');
+    checkCrossConnections(last.content, activeTopic ? activeTopic.specialty : 'General');
+  }
+};
+
+/* ══ PATCH: answerExam — record weak spots ════════════════════════ */
+var _prevAnswerExam = answerExam;
+answerExam = function(chosen, correct, explanation) {
+  _prevAnswerExam(chosen, correct, explanation);
+  var spec = activeTopic ? activeTopic.specialty : 'General';
+  recordExamResult(spec, chosen === correct);
+};
+
+/* ══ BOOT: load theme + init voice on startup ════════════════════ */
+var _prevInit = init;
+init = function() {
+  _prevInit();
+  loadTheme();
+  initVoice();
+  loadAnchors();
+  if (window.innerWidth >= 992) {
+    var vb = document.getElementById('voice-btn');
+    if (vb) vb.style.display = 'flex';
+  }
+};
 
 
 /* ══ BOOT ════════════════════════════════════════════════════════════ */
