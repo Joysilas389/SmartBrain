@@ -15,6 +15,7 @@
 <!-- Mermaid, Marked, Highlight.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark-dimmed.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
@@ -734,11 +735,11 @@ body.light-mode #spec-select option { background:#fff!important; color:#0f2040!i
 
 /* Flashcard flip */
 .fc-flip { perspective: 900px; cursor: pointer; min-height: 72px; }
-.fc-inner { position: relative; width: 100%; height: 100%; min-height: 72px; transition: transform 0.46s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; }
+.fc-inner { position: relative; width: 100%; min-height: 72px; height: 100%; transition: transform 0.46s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; display: flex; flex-direction: column; }
 .fc-flip.flipped .fc-inner { transform: rotateY(180deg); }
-.fc-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 10px; padding: 9px 12px; display: flex; flex-direction: column; justify-content: center; }
-.fc-front { background: linear-gradient(135deg, rgba(0,52,130,0.35), rgba(0,35,100,0.25)); border: 1px solid rgba(0,130,200,0.22); }
-.fc-back { background: linear-gradient(135deg, rgba(0,90,65,0.35), rgba(0,60,50,0.25)); border: 1px solid rgba(0,180,130,0.22); transform: rotateY(180deg); }
+.fc-face { backface-visibility: hidden; border-radius: 10px; padding: 9px 12px; display: flex; flex-direction: column; justify-content: center; }
+.fc-front { background: linear-gradient(135deg, rgba(0,52,130,0.35), rgba(0,35,100,0.25)); border: 1px solid rgba(0,130,200,0.22); position: relative; width: 100%; }
+.fc-back { background: linear-gradient(135deg, rgba(0,90,65,0.35), rgba(0,60,50,0.25)); border: 1px solid rgba(0,180,130,0.22); transform: rotateY(180deg); position: absolute; inset: 0; }
 .fc-lbl { font-size: 0.57rem; font-weight: 700; letter-spacing: 0.12em; margin-bottom: 4px; font-family: var(--sm-mono); }
 .fc-front .fc-lbl { color: rgba(100,180,255,0.6); }
 .fc-back .fc-lbl { color: rgba(0,200,150,0.6); }
@@ -1257,7 +1258,7 @@ body.light-mode #spec-select option { background:#fff!important; color:#0f2040!i
 
             <!-- Right: export + stop + send -->
             <button class="btn-send" id="export-btn" onclick="exportToPDF()" title="Export to PDF"
-              style="display:none;width:32px;height:32px;background:rgba(167,139,250,0.15);border-color:rgba(167,139,250,0.35);color:#a78bfa;font-size:.85rem">
+              style="display:flex;width:32px;height:32px;background:rgba(167,139,250,0.15);border-color:rgba(167,139,250,0.35);color:#a78bfa;font-size:.85rem">
               <i class="bi bi-file-earmark-pdf"></i>
             </button>
             <button class="btn-stop" id="stop-btn" onclick="stopStream()"
@@ -2082,7 +2083,7 @@ async function sendMessage() {
   messages.push({role:'user',content:txt});
   messages.push({role:'assistant',content:''});
   renderMessages(); scrollBottom(); setLoading(true);
-  const hist=messages.slice(0,-1).map(m=>({role:m.role,content:m.content}));
+  const hist=messages.slice(0,-1).filter(m=>m.content&&m.content.trim()).map(m=>({role:m.role,content:m.content}));
   try {
     abortCtrl=new AbortController();
     // Raw fetch for SSE — safeFetch won't work for streaming
@@ -2180,7 +2181,8 @@ function parseAI(c){
   if(last<s.length)parts.push({t:'md',c:s.slice(last)});
   return parts.map(p=>{
     if(p.t==='mermaid'){const id='mm-'+(++mmCount)+'-'+Date.now();return`<div class="mermaid-wrap" id="${id}" data-code="${encodeURIComponent(p.c)}"><div style="color:var(--sm-text3);font-size:.72rem;font-family:var(--sm-mono);padding:.4rem">⟳ Rendering diagram…</div></div>`}
-    if(p.t==='ecg')return renderECGSVG(p.c);
+    if(p.t==='ecg'){const eid='ecg-'+(++mmCount)+'-'+Date.now();setTimeout(function(){drawECG12Lead(eid,p.c);},80);return`<div class="ecg-wrap"><canvas id="${eid}" style="width:100%;display:block;border-radius:6px"></canvas></div>`;}
+
     return marked.parse(p.c||'');
   }).join('');
 }
@@ -2747,12 +2749,7 @@ sendMessage = async function() {
 async function exportToPDF() {
   if (!messages || messages.length === 0) { showToast('No content to export', 'amber'); return; }
   showToast('\u23F3 Preparing PDF\u2026', 'teal');
-  if (!window.jsPDF) {
-    var sc = document.createElement('script');
-    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-    document.head.appendChild(sc);
-    await new Promise(function(res){ sc.onload=res; });
-  }
+  if (!window.jspdf) { showToast('PDF library not loaded, try again', 'danger'); return; }
   var doc = new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   var pageW=210, pageH=297, margin=15, usableW=pageW-margin*2, y=margin;
   function addPage(){doc.addPage();y=margin;}
@@ -2835,7 +2832,7 @@ function initVoice() {
   try {
     voiceRecog = new SR();
     voiceRecog.continuous = true;   // keep listening until user taps stop
-    voiceRecog.lang = '';           // empty = use device language (most compatible)
+    voiceRecog.lang = 'en-US';      // explicit lang — Chrome Android requires this
     voiceRecog.interimResults = false;
     voiceRecog.maxAlternatives = 1;
     voiceRecog.onresult = function(e) {
