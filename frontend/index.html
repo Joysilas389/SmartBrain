@@ -462,12 +462,33 @@ body {
 .mermaid-error { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.2); border-radius: 10px; padding: 0.75rem; color: #fda4af; font-family: var(--sm-mono); font-size: 0.73rem; white-space: pre-wrap; }
 
 /* ECG */
-.ecg-block {
-  font-family: var(--sm-mono); font-size: 0.7rem; line-height: 1.55;
-  background: #010d04; border: 1px solid rgba(0,230,100,0.2); border-radius: 10px;
-  padding: 0.9rem 1rem; color: #00e676; overflow-x: auto; white-space: pre; margin: 0.75em 0; position: relative;
+.ecg-wrap {
+  background: #050f0a;
+  border: 1px solid rgba(0,200,100,0.25);
+  border-radius: 14px;
+  margin: 1em 0;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(0,200,100,0.1);
 }
-.ecg-block::before { content: 'ECG DISPLAY'; position: absolute; top: 6px; right: 10px; font-size: 0.52rem; letter-spacing: 0.15em; color: rgba(0,230,100,0.4); }
+.ecg-wrap::before {
+  content: "ECG"; position: absolute; top: 8px; right: 12px;
+  font-size: 0.52rem; font-weight: 700; letter-spacing: 0.2em;
+  color: rgba(0,200,100,0.35); font-family: var(--sm-mono); z-index: 2;
+}
+.ecg-canvas-wrap {
+  width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y pinch-zoom;
+}
+.ecg-canvas-wrap canvas {
+  display: block; max-width: 100%;
+}
+/* Keep ASCII fallback for non-canvas content */
+.ecg-block {
+  font-family: var(--sm-mono); font-size: 0.68rem; line-height: 1.5;
+  background: #050f0a; padding: 1rem; color: #00e676;
+  overflow-x: auto; white-space: pre;
+}
 
 /* ═══════════════════════════════════════════════════════
    INPUT AREA
@@ -1774,7 +1795,7 @@ function parseAI(c){
   if(last<s.length)parts.push({t:'md',c:s.slice(last)});
   return parts.map(p=>{
     if(p.t==='mermaid'){const id='mm-'+(++mmCount)+'-'+Date.now();return`<div class="mermaid-wrap" id="${id}" data-code="${encodeURIComponent(p.c)}"><div style="color:var(--sm-text3);font-size:.72rem;font-family:var(--sm-mono);padding:.4rem">⟳ Rendering diagram…</div></div>`}
-    if(p.t==='ecg')return`<div class="ecg-block">${esc(p.c)}</div>`;
+    if(p.t==='ecg')return renderECGSVG(p.c);
     return marked.parse(p.c||'');
   }).join('');
 }
@@ -2262,6 +2283,436 @@ renderStudyCard = function() {
     footer.insertBefore(knew, footer.firstChild);
   }
 };
+
+
+/* ══ 12-LEAD ECG RENDERER ══════════════════════════════════════════
+   Parses structured [ecg] blocks and renders a full 12-lead ECG
+   with proper grid, calibration pulse, all 12 leads labelled,
+   colour-coded trace, measurements — like a real hospital printout
+════════════════════════════════════════════════════════════════════ */
+function renderECGSVG(rawText) {
+  var id = 'ecg-' + Date.now() + '-' + Math.floor(Math.random()*9999);
+  setTimeout(function() { drawECG12Lead(id, rawText); }, 100);
+  return '<div class="ecg-wrap">'
+       + '<div class="ecg-canvas-wrap"><canvas id="' + id + '"></canvas></div>'
+       + '</div>';
+}
+
+function drawECG12Lead(id, text) {
+  var canvas = document.getElementById(id);
+  if (!canvas) return;
+
+  var parent   = canvas.parentElement;
+  var W        = (parent ? parent.offsetWidth || 720 : 720);
+  if (W < 300) W = 720;
+
+  // Layout: 3 rows × 4 leads + rhythm strip + header
+  var HEADER_H = 52;
+  var MEAS_H   = 28;
+  var LEAD_H   = 90;
+  var ROWS     = 3;
+  var STRIP_H  = 80;
+  var TOTAL_H  = HEADER_H + MEAS_H + ROWS * LEAD_H + STRIP_H + 20;
+
+  canvas.width  = W;
+  canvas.height = TOTAL_H;
+  canvas.style.width  = '100%';
+  canvas.style.height = TOTAL_H + 'px';
+
+  var ctx = canvas.getContext('2d');
+
+  /* ── Parse ECG text ── */
+  var t    = text.toLowerCase();
+  var lines = text.split('\n');
+  function getField(key) {
+    var re = new RegExp(key + '[:\\s]+([^\\n]+)', 'i');
+    var m  = text.match(re);
+    return m ? m[1].trim() : '';
+  }
+  var rhythm   = getField('RHYTHM') || 'NORMAL SINUS RHYTHM';
+  var rate     = parseInt(getField('RATE')) || 75;
+  var prMs     = parseInt(getField('PR'))   || 160;
+  var qrsMs    = parseInt(getField('QRS'))  || 90;
+  var qtMs     = parseInt(getField('QT'))   || 400;
+  var axis     = getField('AXIS') || 'NORMAL';
+  var interp   = getField('INTERPRETATION') || '';
+
+  /* ── Rhythm flags ── */
+  var isSTEMI_ant  = t.indexOf('anterior') > -1 && (t.indexOf('stemi') > -1 || t.indexOf('st elev') > -1);
+  var isSTEMI_inf  = t.indexOf('inferior') > -1 && (t.indexOf('stemi') > -1 || t.indexOf('st elev') > -1);
+  var isSTEMI_lat  = t.indexOf('lateral')  > -1 && (t.indexOf('stemi') > -1 || t.indexOf('st elev') > -1);
+  var isSTEMI_any  = t.indexOf('stemi') > -1 || (t.indexOf('st elev') > -1);
+  var isSTdep      = t.indexOf('st dep') > -1 || t.indexOf('nstemi') > -1 || t.indexOf('ischemi') > -1;
+  var isTWI        = t.indexOf('t-wave inv') > -1 || t.indexOf('t wave inv') > -1;
+  var isAFib       = t.indexOf('atrial fib') > -1 || t.indexOf('a-fib') > -1 || t.indexOf('afib') > -1;
+  var isAFlutter   = t.indexOf('flutter') > -1;
+  var isSVT        = t.indexOf('svt') > -1;
+  var isVtach      = t.indexOf('ventricular tach') > -1 || t.indexOf('v-tach') > -1 || t.indexOf('vtach') > -1;
+  var isVfib       = t.indexOf('ventricular fib') > -1  || t.indexOf('v-fib') > -1  || t.indexOf('vfib') > -1;
+  var isFirstDeg   = t.indexOf('first degree') > -1 || t.indexOf('1st degree') > -1;
+  var isWenckebach = t.indexOf('wenckebach') > -1 || t.indexOf('mobitz i') > -1;
+  var isMobitzII   = t.indexOf('mobitz ii') > -1 || t.indexOf('mobitz type ii') > -1;
+  var isComplete   = t.indexOf('complete') > -1 && (t.indexOf('block') > -1);
+  var isLBBB       = t.indexOf('left bundle') > -1 || t.indexOf('lbbb') > -1;
+  var isRBBB       = t.indexOf('right bundle') > -1 || t.indexOf('rbbb') > -1;
+  var isLVH        = t.indexOf('lvh') > -1 || t.indexOf('left ventricular hypert') > -1;
+  var isLongQT     = t.indexOf('long qt') > -1 || t.indexOf('prolonged qt') > -1;
+  var isWPW        = t.indexOf('wpw') > -1 || t.indexOf('wolff') > -1;
+  var isBrady      = t.indexOf('bradycardia') > -1 || rate < 50;
+  var isTachy      = t.indexOf('tachycardia') > -1 || rate > 100;
+
+  /* ── Grid constants ── */
+  var mm      = W / 250;   // 1mm on screen
+  var bigBox  = mm * 5;    // 5mm = 0.2s
+  var smallBox= mm;        // 1mm = 0.04s
+
+  /* ── Draw full grid background ── */
+  function drawGrid(x0, y0, w, h) {
+    // Small boxes
+    ctx.strokeStyle = 'rgba(0,180,80,0.07)';
+    ctx.lineWidth   = 0.4;
+    for (var xi = x0; xi <= x0+w; xi += smallBox) {
+      ctx.beginPath(); ctx.moveTo(xi, y0); ctx.lineTo(xi, y0+h); ctx.stroke();
+    }
+    for (var yi = y0; yi <= y0+h; yi += smallBox) {
+      ctx.beginPath(); ctx.moveTo(x0, yi); ctx.lineTo(x0+w, yi); ctx.stroke();
+    }
+    // Big boxes
+    ctx.strokeStyle = 'rgba(0,210,100,0.2)';
+    ctx.lineWidth   = 0.7;
+    for (var xb = x0; xb <= x0+w; xb += bigBox) {
+      ctx.beginPath(); ctx.moveTo(xb, y0); ctx.lineTo(xb, y0+h); ctx.stroke();
+    }
+    for (var yb = y0; yb <= y0+h; yb += bigBox) {
+      ctx.beginPath(); ctx.moveTo(x0, yb); ctx.lineTo(x0+w, yb); ctx.stroke();
+    }
+  }
+
+  /* ── Background ── */
+  ctx.fillStyle = '#040e08';
+  ctx.fillRect(0, 0, W, TOTAL_H);
+
+  /* ── Draw grid for entire canvas ── */
+  drawGrid(0, HEADER_H + MEAS_H, W, ROWS * LEAD_H + STRIP_H + 8);
+
+  /* ── Header ── */
+  ctx.fillStyle = '#00e676';
+  ctx.font      = 'bold 13px "JetBrains Mono", monospace';
+  ctx.fillText(rhythm.toUpperCase(), 10, 20);
+
+  ctx.fillStyle = 'rgba(0,200,100,0.6)';
+  ctx.font      = '10px "JetBrains Mono", monospace';
+  var measLine = 'HR: ' + rate + ' bpm   PR: ' + prMs + 'ms   QRS: ' + qrsMs + 'ms   QT: ' + qtMs + 'ms   AXIS: ' + axis;
+  ctx.fillText(measLine, 10, 36);
+
+  ctx.fillStyle = 'rgba(100,200,255,0.5)';
+  ctx.font      = '9px "JetBrains Mono", monospace';
+  ctx.fillText('25mm/s   10mm/mV   Standard 12-Lead ECG', 10, 50);
+
+  /* ── Waveform builder ──
+     Returns array of {t, v} points for one beat cycle
+     t = time in mm units, v = voltage in mm units (positive = up = negative y)
+  ── */
+  function buildBeat(lead, beatIdx) {
+    var pts = [];
+    var PR  = prMs * mm / 40;   // convert ms to canvas units (1mm = 0.04s)
+    var QRS = qrsMs * mm / 40;
+    var QT  = qtMs  * mm / 40;
+    var RR  = 60000 / rate * mm / 40;
+
+    // Lead-specific amplitudes
+    var pAmp   = 0, rAmp = 0, qAmp = 0, sAmp = 0, tAmp = 0, stShift = 0;
+    var pDur   = mm * 2.5, qrsDur = QRS, tDur = mm * 4;
+
+    // Base amplitudes by lead
+    var leadAmps = {
+      'I':   { p:1.2, r:6, q:-0.5, s:-1, t:2.5 },
+      'II':  { p:1.8, r:8, q:-0.8, s:-1.5, t:3 },
+      'III': { p:0.8, r:4, q:-0.3, s:-2, t:1.5 },
+      'aVR': { p:-1.2, r:-6, q:0.5, s:2, t:-2.5 },
+      'aVL': { p:0.6, r:3, q:-0.3, s:-0.8, t:1.5 },
+      'aVF': { p:1.5, r:6, q:-0.5, s:-2, t:2 },
+      'V1':  { p:-0.5, r:1.5, q:-0.5, s:-8, t:-1.5 },
+      'V2':  { p:-0.3, r:3, q:-1, s:-9, t:2 },
+      'V3':  { p:0.3, r:5, q:-1, s:-6, t:3 },
+      'V4':  { p:1, r:9, q:-0.8, s:-3, t:4 },
+      'V5':  { p:1.2, r:10, q:-0.7, s:-2, t:4 },
+      'V6':  { p:1.4, r:8, q:-0.5, s:-1, t:3.5 },
+    };
+    var amp = leadAmps[lead] || leadAmps['II'];
+    pAmp = amp.p * mm; rAmp = amp.r * mm; qAmp = amp.q * mm; sAmp = amp.s * mm; tAmp = amp.t * mm;
+
+    // Pathology modifications
+    if (isSTEMI_ant) {
+      if (['V1','V2','V3','V4'].indexOf(lead) > -1) { stShift = mm * 3; tAmp = mm * 5; }
+      if (['I','aVL'].indexOf(lead) > -1)            { stShift = mm * 2; }
+      if (['II','III','aVF'].indexOf(lead) > -1)     { stShift = -mm * 1.5; tAmp = -mm * 2; } // reciprocal
+    }
+    if (isSTEMI_inf) {
+      if (['II','III','aVF'].indexOf(lead) > -1)     { stShift = mm * 3; tAmp = mm * 4; }
+      if (['I','aVL'].indexOf(lead) > -1)            { stShift = -mm * 1.5; } // reciprocal
+      if (['V1','V2'].indexOf(lead) > -1)            { stShift = -mm * 1; }
+    }
+    if (isSTEMI_lat) {
+      if (['I','aVL','V5','V6'].indexOf(lead) > -1)  { stShift = mm * 3; tAmp = mm * 4; }
+      if (['V1','V2','V3'].indexOf(lead) > -1)       { stShift = -mm * 1; }
+    }
+    if (isSTdep) {
+      stShift = -mm * (lead === 'aVR' ? -1 : 1.5);
+      tAmp    *= 0.3;
+    }
+    if (isTWI) {
+      tAmp = -Math.abs(tAmp);
+    }
+    if (isLBBB) {
+      if (['V5','V6','I','aVL'].indexOf(lead) > -1)  { rAmp *= 1.8; qAmp = 0; sAmp *= 0.2; }
+      if (['V1','V2'].indexOf(lead) > -1)            { rAmp = mm * 0.5; sAmp = -mm * 12; qAmp = 0; }
+      qrsDur = mm * 6;
+    }
+    if (isRBBB) {
+      if (['V1','V2'].indexOf(lead) > -1)            { rAmp *= 0.6; sAmp = -mm * 2; tAmp = -mm * 2; }
+      if (['V5','V6','I'].indexOf(lead) > -1)        { sAmp = -mm * 4; }
+      qrsDur = mm * 6;
+    }
+    if (isLVH) {
+      if (['V5','V6'].indexOf(lead) > -1)            { rAmp = mm * 16; }
+      if (['V1','V2'].indexOf(lead) > -1)            { sAmp = -mm * 14; }
+    }
+    if (isLongQT || isWPW) {
+      QT = mm * 12;
+    }
+    if (isWPW) {
+      PR = mm * 2;   // short PR
+      qrsDur = mm * 5; // wide QRS
+      qAmp   = mm * 3; // delta wave
+    }
+    if (isFirstDeg) {
+      PR = Math.max(PR, mm * 8); // >200ms
+    }
+    if (isWenckebach) {
+      PR = mm * (5 + beatIdx * 1.8);
+    }
+
+    var cursor = 0;
+    // Flat lead-in
+    pts.push({t:cursor, v:0}); cursor += mm * 3;
+
+    if (isAFib) {
+      // Irregular fibrillatory baseline
+      for (var fi = 0; fi < PR; fi += mm * 0.5) {
+        pts.push({t:cursor + fi, v:(Math.random()-0.5)*mm*1.2});
+      }
+      cursor += PR;
+    } else if (isVfib) {
+      // Completely chaotic
+      for (var vi = 0; vi < RR * 0.9; vi += mm * 0.4) {
+        pts.push({t:cursor + vi, v:(Math.random()-0.5)*rAmp*0.8});
+      }
+      return pts;
+    } else {
+      // P wave
+      var dropped = (isMobitzII && beatIdx % 4 === 3) || (isWenckebach && beatIdx % 4 === 3) || (isComplete && beatIdx % 3 === 2);
+      if (!dropped) {
+        for (var pi = 0; pi <= pDur; pi += mm*0.3) {
+          pts.push({t:cursor + pi, v:pAmp * Math.sin(Math.PI * pi / pDur) * (isAFlutter ? 1.8 : 1)});
+        }
+        cursor += pDur;
+        if (isAFlutter) {
+          // Add flutter wave
+          for (var fli = 0; fli < mm*2; fli += mm*0.3) {
+            pts.push({t:cursor+fli, v:-pAmp*0.8*Math.sin(Math.PI*fli/(mm*2))});
+          }
+          cursor += mm*2;
+        }
+        // PR segment
+        pts.push({t:cursor, v:0}); cursor += PR - pDur - mm;
+        pts.push({t:cursor, v:0});
+      } else {
+        // Dropped beat — flat line, no QRS
+        pts.push({t:cursor + PR + qrsDur + QT - QRS, v:0});
+        return pts;
+      }
+    }
+
+    if (isVtach) {
+      // Wide bizarre QRS
+      pts.push({t:cursor, v:0});
+      pts.push({t:cursor + qrsDur*0.15, v:rAmp*1.4});
+      pts.push({t:cursor + qrsDur*0.45, v:-rAmp*0.5});
+      pts.push({t:cursor + qrsDur*0.65, v:rAmp*0.3});
+      pts.push({t:cursor + qrsDur, v:0});
+      cursor += qrsDur;
+    } else {
+      // Q wave (delta wave if WPW)
+      if (isWPW) {
+        for (var di = 0; di <= mm*2; di += mm*0.3) {
+          pts.push({t:cursor+di, v:di/2});
+        }
+        cursor += mm*2;
+      } else {
+        pts.push({t:cursor, v:0});
+        pts.push({t:cursor + qrsDur*0.12, v:qAmp});
+        cursor += qrsDur*0.12;
+      }
+      // R wave
+      pts.push({t:cursor + qrsDur*0.18, v:rAmp});
+      // S wave
+      pts.push({t:cursor + qrsDur*0.35, v:sAmp});
+      // Return to baseline
+      pts.push({t:cursor + qrsDur*0.55, v: stShift});
+      cursor += qrsDur;
+    }
+
+    // ST segment
+    var stDur = mm * 3;
+    pts.push({t:cursor, v:stShift});
+    pts.push({t:cursor + stDur, v:stShift});
+    cursor += stDur;
+
+    // T wave
+    var tDurActual = QT - QRS - stDur;
+    if (tDurActual < mm*2) tDurActual = mm*4;
+    for (var ti = 0; ti <= tDurActual; ti += mm*0.4) {
+      pts.push({t:cursor + ti, v:stShift + tAmp * Math.sin(Math.PI * ti / tDurActual)});
+    }
+    cursor += tDurActual;
+
+    // Flat end
+    pts.push({t:cursor + mm*2, v:0});
+
+    return pts;
+  }
+
+  /* ── Draw calibration pulse ── */
+  function drawCalPulse(x, y, amplitude) {
+    ctx.strokeStyle = 'rgba(245,158,11,0.8)';
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y - amplitude * 10); // 10mm = 1mV
+    ctx.lineTo(x + bigBox, y - amplitude * 10);
+    ctx.lineTo(x + bigBox, y);
+    ctx.stroke();
+  }
+
+  /* ── Draw a lead waveform ── */
+  function drawLead(label, x, y, w, amplitude, beatColor) {
+    var baseline = y + LEAD_H * 0.52;
+    var beatW    = w;
+    var numBeats = Math.ceil(beatW / (60000 / rate * mm / 40)) + 2;
+
+    // Lead label
+    ctx.fillStyle = 'rgba(0,200,100,0.75)';
+    ctx.font      = 'bold 10px "JetBrains Mono", monospace';
+    ctx.fillText(label, x + 3, baseline - LEAD_H * 0.38);
+
+    // Baseline
+    ctx.strokeStyle = 'rgba(0,180,80,0.12)';
+    ctx.lineWidth   = 0.5;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(x, baseline); ctx.lineTo(x+w, baseline); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Clipping region
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, LEAD_H);
+    ctx.clip();
+
+    // Draw trace
+    ctx.strokeStyle = beatColor || '#00e676';
+    ctx.lineWidth   = 1.8;
+    ctx.shadowColor = 'rgba(0,230,100,0.35)';
+    ctx.shadowBlur  = 3;
+    ctx.lineJoin    = 'round';
+    ctx.lineCap     = 'round';
+    ctx.beginPath();
+
+    var cx2 = x, firstPt = true;
+    var RR   = 60000 / rate * mm / 40;
+
+    for (var bi = 0; bi < numBeats + 1; bi++) {
+      var beatPts = buildBeat(label, bi);
+      for (var pi = 0; pi < beatPts.length; pi++) {
+        var px2 = cx2 + beatPts[pi].t;
+        var py2 = baseline - beatPts[pi].v * amplitude;
+        if (px2 > x + w + mm * 5) break;
+        if (firstPt) { ctx.moveTo(px2, py2); firstPt = false; }
+        else ctx.lineTo(px2, py2);
+      }
+      cx2 += RR;
+      if (cx2 > x + w) break;
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  /* ── Layout: 3 rows × 4 leads ── */
+  var LEADS_LAYOUT = [
+    ['I',   'aVR', 'V1', 'V4'],
+    ['II',  'aVL', 'V2', 'V5'],
+    ['III', 'aVF', 'V3', 'V6'],
+  ];
+  var LEAD_COLORS = {
+    'I':'#00e676','II':'#00e676','III':'#00e676',
+    'aVR':'#f87171','aVL':'#f87171','aVF':'#f87171',
+    'V1':'#7dd3fc','V2':'#7dd3fc','V3':'#7dd3fc',
+    'V4':'#a78bfa','V5':'#a78bfa','V6':'#a78bfa',
+  };
+
+  var colW    = Math.floor(W / 4);
+  var yStart  = HEADER_H + MEAS_H;
+  var ampMult = LEAD_H / (mm * 22); // scale amplitude to fit lead height
+
+  // Draw calibration pulse top-left
+  drawCalPulse(4, yStart + LEAD_H * 0.52, ampMult);
+  ctx.fillStyle = 'rgba(245,158,11,0.55)';
+  ctx.font      = '8px "JetBrains Mono", monospace';
+  ctx.fillText('1mV', 4, yStart + LEAD_H * 0.52 - ampMult * 10 - 3);
+
+  // Draw 3×4 leads
+  for (var row = 0; row < 3; row++) {
+    for (var col = 0; col < 4; col++) {
+      var leadName = LEADS_LAYOUT[row][col];
+      var lx = col * colW;
+      var ly = yStart + row * LEAD_H;
+      drawLead(leadName, lx, ly, colW, ampMult, LEAD_COLORS[leadName]);
+    }
+  }
+
+  // Divider lines between columns
+  ctx.strokeStyle = 'rgba(0,180,80,0.15)';
+  ctx.lineWidth   = 0.8;
+  ctx.setLineDash([2,4]);
+  for (var dc = 1; dc < 4; dc++) {
+    ctx.beginPath();
+    ctx.moveTo(dc * colW, yStart);
+    ctx.lineTo(dc * colW, yStart + ROWS * LEAD_H);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // Rhythm strip (Lead II full width)
+  var stripY = yStart + ROWS * LEAD_H + 6;
+  ctx.fillStyle = 'rgba(0,200,100,0.18)';
+  ctx.fillRect(0, stripY - 2, W, STRIP_H + 4);
+  drawLead('II', 0, stripY, W, ampMult * 1.1, '#00e676');
+
+  // Rhythm strip label
+  ctx.fillStyle = 'rgba(0,200,100,0.55)';
+  ctx.font      = '9px "JetBrains Mono", monospace';
+  ctx.fillText('RHYTHM STRIP — Lead II (full length)', 8, stripY + STRIP_H - 6);
+
+  // Bottom: interpretation snippet
+  if (interp) {
+    var snippet = interp.slice(0, 120) + (interp.length > 120 ? '…' : '');
+    ctx.fillStyle = 'rgba(0,200,100,0.4)';
+    ctx.font      = '9px "JetBrains Mono", monospace';
+    ctx.fillText('INTERP: ' + snippet, 8, TOTAL_H - 5);
+  }
+}
+
 
 /* ══ BOOT ════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', init);
