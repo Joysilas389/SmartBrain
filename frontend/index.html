@@ -2825,68 +2825,121 @@ function loadTheme() {
 }
 
 /* ══ VOICE INPUT ══════════════════════════════════════════════════ */
-var voiceRecog = null, voiceActive = false;
-function initVoice() {
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { return; }
-  try {
-    voiceRecog = new SR();
-    voiceRecog.continuous = true;   // keep listening until user taps stop
-    voiceRecog.lang = 'en-US';      // explicit lang — Chrome Android requires this
-    voiceRecog.interimResults = false;
-    voiceRecog.maxAlternatives = 1;
-    voiceRecog.onresult = function(e) {
-      var transcript = '';
-      for (var i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) transcript += e.results[i][0].transcript + ' ';
-      }
-      if (transcript.trim()) {
-        var inp = document.getElementById('msg-input');
-        if (inp) { inp.value = (inp.value ? inp.value.trimEnd() + ' ' : '') + transcript.trim(); updateCC(); inp.focus(); }
-      }
-    };
-    voiceRecog.onend = function() {
-      // Only reset UI if user hasn't pressed stop themselves
-      if (voiceActive) {
-        // Restart to keep listening
-        try { voiceRecog.start(); return; } catch(e2) {}
-      }
-      voiceActive = false;
-      var btn = document.getElementById('voice-btn'), ico = document.getElementById('voice-icon');
-      if (btn) btn.classList.remove('recording');
-      if (ico) ico.className = 'bi bi-mic-fill';
-    };
-    voiceRecog.onerror = function(e) {
-      if (e.error === 'no-speech') return; // ignore silence — just keep listening
-      if (e.error === 'aborted') return;
-      voiceActive = false;
-      var btn = document.getElementById('voice-btn'), ico = document.getElementById('voice-icon');
-      if (btn) btn.classList.remove('recording');
-      if (ico) ico.className = 'bi bi-mic-fill';
-      if (e.error !== 'not-allowed') showToast('Voice error: ' + e.error, 'amber');
-    };
-    voiceRecog.onnomatch = function() {}; // ignore no-match silently
-  } catch(err) { voiceRecog = null; }
-}
-function toggleVoice() {
-  if (!voiceRecog) { initVoice(); }
-  if (!voiceRecog) { showToast('Voice: use Chrome on Android with HTTPS', 'amber'); return; }
-  if (voiceActive) {
-    try { voiceRecog.stop(); } catch(e) {}
-    voiceActive = false;
-    var b0=document.getElementById('voice-btn'),i0=document.getElementById('voice-icon');
-    if(b0)b0.classList.remove('recording'); if(i0)i0.className='bi bi-mic-fill';
+/* ══ VOICE INPUT — Chrome Android compatible ══════════════════════ */
+var voiceActive = false;
+var voiceRecog  = null;
+
+function _voiceSetUI(active) {
+  var btn = document.getElementById('voice-btn');
+  var ico = document.getElementById('voice-icon');
+  if (!btn || !ico) return;
+  if (active) {
+    btn.classList.add('recording');
+    ico.className = 'bi bi-stop-fill';
   } else {
-    voiceActive = true;
-    var btn=document.getElementById('voice-btn'),ico=document.getElementById('voice-icon');
-    if(btn)btn.classList.add('recording'); if(ico)ico.className='bi bi-stop-fill';
-    showToast('Listening... tap mic again to stop','teal');
-    try { voiceRecog.start(); } catch(e) {
-      voiceActive=false; if(btn)btn.classList.remove('recording'); if(ico)ico.className='bi bi-mic-fill';
-      showToast('Voice error: '+e.message,'danger');
-    }
+    btn.classList.remove('recording');
+    ico.className = 'bi bi-mic-fill';
   }
 }
+
+function _voiceAppend(text) {
+  var inp = document.getElementById('msg-input');
+  if (!inp || !text.trim()) return;
+  inp.value = (inp.value ? inp.value.trimEnd() + ' ' : '') + text.trim();
+  updateCC();
+}
+
+function _makeSR() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  var r = new SR();
+  r.continuous      = false;   // false = more reliable on Chrome Android
+  r.interimResults  = true;
+  r.lang            = 'en-US';
+  r.maxAlternatives = 1;
+
+  r.onresult = function(e) {
+    var final = '', interim = '';
+    for (var i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final   += e.results[i][0].transcript;
+      else                       interim += e.results[i][0].transcript;
+    }
+    // Show interim live in placeholder, append final to input
+    var inp = document.getElementById('msg-input');
+    if (inp && interim) inp.placeholder = interim;
+    if (final.trim()) {
+      _voiceAppend(final);
+      if (inp) inp.placeholder = 'Ask anything — topic, mechanism, ECG, drug, diagram, or attach a document…';
+    }
+  };
+
+  r.onend = function() {
+    // Reset placeholder
+    var inp = document.getElementById('msg-input');
+    if (inp) inp.placeholder = 'Ask anything — topic, mechanism, ECG, drug, diagram, or attach a document…';
+    // If still active, restart for continuous feel
+    if (voiceActive) {
+      try {
+        var next = _makeSR();
+        if (next) { voiceRecog = next; _attachHandlers(next); next.start(); return; }
+      } catch(e2) {}
+    }
+    voiceActive = false;
+    _voiceSetUI(false);
+  };
+
+  r.onerror = function(e) {
+    var inp = document.getElementById('msg-input');
+    if (inp) inp.placeholder = 'Ask anything — topic, mechanism, ECG, drug, diagram, or attach a document…';
+    if (e.error === 'no-speech' && voiceActive) {
+      // Restart silently on no-speech
+      try {
+        var next2 = _makeSR();
+        if (next2) { voiceRecog = next2; _attachHandlers(next2); next2.start(); return; }
+      } catch(e3) {}
+    }
+    if (e.error === 'not-allowed') {
+      showToast('Microphone blocked — allow mic in browser settings', 'danger');
+    } else if (e.error !== 'aborted') {
+      showToast('Voice error: ' + e.error, 'amber');
+    }
+    voiceActive = false;
+    _voiceSetUI(false);
+  };
+
+  return r;
+}
+
+function _attachHandlers(r) { /* handlers set inside _makeSR */ return r; }
+
+function toggleVoice() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Voice not supported — use Chrome on Android', 'amber'); return; }
+
+  if (voiceActive) {
+    // Stop
+    voiceActive = false;
+    _voiceSetUI(false);
+    try { if (voiceRecog) voiceRecog.abort(); } catch(e) {}
+    voiceRecog = null;
+    return;
+  }
+
+  // Start
+  voiceActive = true;
+  _voiceSetUI(true);
+  showToast('🎤 Listening… tap mic to stop', 'teal');
+  try {
+    voiceRecog = _makeSR();
+    voiceRecog.start();
+  } catch(e) {
+    voiceActive = false;
+    _voiceSetUI(false);
+    showToast('Could not start mic: ' + e.message, 'danger');
+  }
+}
+
+function initVoice() { /* no-op — voice starts on first tap */ }
 
 /* ══ FEATURES MODAL TAB SWITCHER ═════════════════════════════════ */
 var featPanes = ['sim','diff','anchor','heat','recon','bedside'];
