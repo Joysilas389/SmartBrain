@@ -324,14 +324,24 @@ body {
   padding: 2px 8px; border-radius: 20px; flex-shrink: 0;
 }
 #spec-select {
-  font-size: 0.72rem;
-  max-width: 130px;
-  background: rgba(20,184,166,0.05);
-  border-color: var(--sm-border);
-  color: var(--sm-text1);
-  border-radius: 8px;
+  font-size: 0.75rem !important;
+  max-width: 150px;
+  min-width: 80px;
+  background: rgba(20,184,166,0.08) !important;
+  border: 1px solid rgba(20,184,166,0.4) !important;
+  color: var(--sm-teal) !important;
+  border-radius: 10px !important;
+  padding: 3px 6px !important;
+  font-weight: 600 !important;
   display: none;
+  -webkit-appearance: auto;
+  appearance: auto;
+  cursor: pointer;
 }
+#spec-select option { background:#0b1830 !important; color:var(--sm-text1) !important; }
+#spec-select optgroup { background:#0b1830 !important; color:var(--sm-teal) !important; font-weight:700; }
+body.light-mode #spec-select { background:rgba(20,184,166,0.08)!important; color:var(--sm-teal)!important; }
+body.light-mode #spec-select option { background:#fff!important; color:#0f2040!important; }
 #spec-select:focus { box-shadow: 0 0 0 0.2rem rgba(20,184,166,0.18); border-color: var(--sm-teal); }
 
 /* Desktop tab row */
@@ -1239,7 +1249,7 @@ body {
             <button class="btn-attach" id="attach-btn" onclick="triggerAttach()" title="Attach file">
               <i class="bi bi-paperclip"></i>
             </button>
-            <button class="btn-voice" id="voice-btn" onclick="toggleVoice()" title="Voice input" style="display:none">
+            <button class="btn-voice" id="voice-btn" onclick="toggleVoice()" title="Voice input" style="display:flex">
               <i class="bi bi-mic-fill" id="voice-icon"></i>
             </button>
 
@@ -2844,15 +2854,22 @@ function initVoice() {
   voiceRecog.onerror = function() { voiceActive = false; showToast('Voice input error', 'danger'); };
 }
 function toggleVoice() {
-  if (!voiceRecog) { showToast('Voice input not supported in this browser', 'amber'); return; }
-  if (voiceActive) { voiceRecog.stop(); voiceActive = false; }
-  else {
+  if (!voiceRecog) { initVoice(); }
+  if (!voiceRecog) { showToast('Voice: use Chrome on Android with HTTPS', 'amber'); return; }
+  if (voiceActive) {
+    try { voiceRecog.stop(); } catch(e) {}
+    voiceActive = false;
+    var b0=document.getElementById('voice-btn'),i0=document.getElementById('voice-icon');
+    if(b0)b0.classList.remove('recording'); if(i0)i0.className='bi bi-mic-fill';
+  } else {
     voiceActive = true;
-    var btn = document.getElementById('voice-btn'), ico = document.getElementById('voice-icon');
-    if (btn) btn.classList.add('recording');
-    if (ico) ico.className = 'bi bi-stop-fill';
-    showToast('Listening\u2026', 'teal');
-    try { voiceRecog.start(); } catch(e) { voiceActive = false; }
+    var btn=document.getElementById('voice-btn'),ico=document.getElementById('voice-icon');
+    if(btn)btn.classList.add('recording'); if(ico)ico.className='bi bi-stop-fill';
+    showToast('Listening... tap mic again to stop','teal');
+    try { voiceRecog.start(); } catch(e) {
+      voiceActive=false; if(btn)btn.classList.remove('recording'); if(ico)ico.className='bi bi-mic-fill';
+      showToast('Voice error: '+e.message,'danger');
+    }
   }
 }
 
@@ -2923,6 +2940,8 @@ async function runSimTurn(prompt, isFirst) {
     simCase = { messages:simMessages, specialty:(document.getElementById('sim-specialty')||{}).value||'General' };
   } catch(e) { if(loadDiv.parentNode)loadDiv.remove(); simAddMsg('system','Error: '+e.message); }
 }
+function simReveal() { simRevealDiagnosis(); }
+
 function simSend() {
   var inp = document.getElementById('sim-input');
   if (!inp || !inp.value.trim()) return;
