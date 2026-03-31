@@ -734,11 +734,11 @@ body.light-mode #spec-select option { background:#fff!important; color:#0f2040!i
 }
 
 /* Flashcard flip */
-.fc-flip { perspective: 900px; cursor: pointer; min-height: 72px; }
-.fc-inner { position: relative; width: 100%; min-height: 72px; height: 100%; transition: transform 0.46s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; display: flex; flex-direction: column; }
+.fc-flip { perspective: 900px; cursor: pointer; min-height: 100px; }
+.fc-inner { position: relative; width: 100%; height: 100px; transition: transform 0.46s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; }
 .fc-flip.flipped .fc-inner { transform: rotateY(180deg); }
-.fc-face { backface-visibility: hidden; border-radius: 10px; padding: 9px 12px; display: flex; flex-direction: column; justify-content: center; }
-.fc-front { background: linear-gradient(135deg, rgba(0,52,130,0.35), rgba(0,35,100,0.25)); border: 1px solid rgba(0,130,200,0.22); position: relative; width: 100%; }
+.fc-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 10px; padding: 9px 12px; display: flex; flex-direction: column; justify-content: center; }
+.fc-front { background: linear-gradient(135deg, rgba(0,52,130,0.35), rgba(0,35,100,0.25)); border: 1px solid rgba(0,130,200,0.22); }
 .fc-back { background: linear-gradient(135deg, rgba(0,90,65,0.35), rgba(0,60,50,0.25)); border: 1px solid rgba(0,180,130,0.22); transform: rotateY(180deg); position: absolute; inset: 0; }
 .fc-lbl { font-size: 0.57rem; font-weight: 700; letter-spacing: 0.12em; margin-bottom: 4px; font-family: var(--sm-mono); }
 .fc-front .fc-lbl { color: rgba(100,180,255,0.6); }
@@ -1865,7 +1865,7 @@ async function loadTopics() {
     renderTopics(); updateStats(); updateLandingRecent();
   } catch(e) {
     console.warn('loadTopics:', e.message);
-    showToast('⚠ ' + e.message, 'danger');
+    showToast('⚠ Backend: ' + e.message + ' — check Render is running', 'danger');
   }
 }
 
@@ -2540,7 +2540,7 @@ async function generateExam() {
     + (sessionContext ? 'WHAT WAS TAUGHT IN THIS SESSION:\n' + sessionContext + '\n\n' : '')
     + 'Generate a question that directly tests understanding of these concepts — not a random question about the specialty.\n\nFormat EXACTLY like this:\nVIGNETTE: [2-4 sentence clinical scenario with specific patient details, labs, vitals, exam findings]\nSTEM: [The specific question — mechanism, diagnosis, or management]\nA: [Option A text]\nB: [Option B text]\nC: [Option C text]\nD: [Option D text]\nE: [Option E text]\nCORRECT: [A, B, C, D, or E]\nEXPLANATION: [Full first-principles mechanism explanation — why correct answer is right and why each wrong answer is wrong]';
   try {
-    var res = await fetch(API + '/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages:[{role:'user',content:prompt}], topic_id:null }) });
+    var res = await fetch(API + '/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages:[{role:'user',content:prompt}], topic_id:activeId }) });
     var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', full = '';
     while (true) {
       var rv = await reader.read(); if (rv.done) break;
@@ -2749,8 +2749,8 @@ sendMessage = async function() {
 async function exportToPDF() {
   if (!messages || messages.length === 0) { showToast('No content to export', 'amber'); return; }
   showToast('\u23F3 Preparing PDF\u2026', 'teal');
-  if (!window.jspdf) { showToast('PDF library not loaded, try again', 'danger'); return; }
-  var doc = new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  var _jspdf = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf : window.jsPDF ? {jsPDF: window.jsPDF} : null; if (!_jspdf) { showToast('PDF library not loaded — reload page and try again', 'danger'); return; }
+  var doc = new _jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   var pageW=210, pageH=297, margin=15, usableW=pageW-margin*2, y=margin;
   function addPage(){doc.addPage();y=margin;}
   function checkPage(n){if(y+n>pageH-margin)addPage();}
@@ -2874,15 +2874,15 @@ function _makeSR() {
   };
 
   r.onend = function() {
-    // Reset placeholder
     var inp = document.getElementById('msg-input');
     if (inp) inp.placeholder = 'Ask anything — topic, mechanism, ECG, drug, diagram, or attach a document…';
-    // If still active, restart for continuous feel
     if (voiceActive) {
       try {
-        var next = _makeSR();
-        if (next) { voiceRecog = next; _attachHandlers(next); next.start(); return; }
-      } catch(e2) {}
+        voiceRecog = _makeSR();
+        if (voiceRecog) { voiceRecog.start(); return; }
+      } catch(e2) {
+        showToast('Mic restarted — tap mic again if needed', 'amber');
+      }
     }
     voiceActive = false;
     _voiceSetUI(false);
@@ -2925,7 +2925,26 @@ function toggleVoice() {
     return;
   }
 
-  // Start
+  // Request mic permission explicitly first on Android
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+      stream.getTracks().forEach(function(t) { t.stop(); }); // release stream
+      voiceActive = true;
+      _voiceSetUI(true);
+      showToast('🎤 Listening… tap mic to stop', 'teal');
+      try {
+        voiceRecog = _makeSR();
+        voiceRecog.start();
+      } catch(e) {
+        voiceActive = false;
+        _voiceSetUI(false);
+        showToast('Could not start mic: ' + e.message, 'danger');
+      }
+    }).catch(function(err) {
+      showToast('Mic blocked: ' + err.message + ' — allow mic in Chrome settings', 'danger');
+    });
+    return;
+  }
   voiceActive = true;
   _voiceSetUI(true);
   showToast('🎤 Listening… tap mic to stop', 'teal');

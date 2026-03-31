@@ -10,17 +10,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Render Deploy Hook
-        if: env.RENDER_DEPLOY_HOOK != ''
-        run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
-        env:
-          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
+            curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+            echo "Render deploy triggered"
+          else
+            echo "RENDER_DEPLOY_HOOK not set — set it in GitHub repo secrets"
+          fi
 
   deploy-frontend:
     name: Trigger Netlify Deploy
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Netlify Build Hook
-        if: env.NETLIFY_BUILD_HOOK != ''
-        run: curl -X POST -d '{}' "${{ secrets.NETLIFY_BUILD_HOOK }}"
-        env:
-          NETLIFY_BUILD_HOOK: ${{ secrets.NETLIFY_BUILD_HOOK }}
+        run: |
+          if [ -n "${{ secrets.NETLIFY_BUILD_HOOK }}" ]; then
+            curl -X POST -d '{}' "${{ secrets.NETLIFY_BUILD_HOOK }}"
+            echo "Netlify deploy triggered"
+          else
+            echo "NETLIFY_BUILD_HOOK not set — set it in GitHub repo secrets"
+          fi
