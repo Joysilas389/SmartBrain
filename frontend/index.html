@@ -1121,6 +1121,9 @@ body.light-mode #spec-select option { background:#fff!important; color:#0f2040!i
     <div id="view-chat">
       <!-- Message scroll -->
       <div id="msg-scroll">
+        <div id="hl-hint" style="text-align:center;padding:4px 0;font-size:.62rem;color:var(--sm-text3);flex-shrink:0">
+          <i class="bi bi-hand-index-thumb me-1"></i>Select any AI text to save as flashcard or concept
+        </div>
         <div id="empty-state" class="text-center py-4">
           <div style="font-size:2rem;opacity:.35;margin-bottom:.6rem">⚕</div>
           <div style="font-family:var(--sm-serif);font-style:italic;font-size:1.05rem;color:var(--sm-text2);margin-bottom:.35rem">Ready to teach</div>
@@ -2270,19 +2273,35 @@ async function deleteCon(id){
 
 /* ══ HIGHLIGHT ══════════════════════════════════════════════════════ */
 function setupHighlight(){
-  document.addEventListener('mouseup',e=>{
-    const sel=window.getSelection();const txt=sel?.toString().trim();
-    if(!txt||txt.length<5){closeHlMenu();return;}
-    let el=sel.anchorNode?.nodeType===3?sel.anchorNode.parentElement:sel.anchorNode;
-    let inAI=false;
-    while(el){if(el.classList?.contains('bubble-ai')){inAI=true;break;}el=el.parentElement;}
-    if(!inAI){closeHlMenu();return;}
-    hlText=txt;hlTopicId=activeId;
-    document.getElementById('hl-prev').textContent=txt.slice(0,100)+(txt.length>100?'…':'');
-    const menu=document.getElementById('hl-menu');
-    menu.style.left=Math.min(e.clientX,innerWidth-195)+'px';
-    menu.style.top=(e.clientY-15)+'px';
-    menu.classList.add('show');
+  function handleSelection(clientX, clientY){
+    // Small delay lets browser finalize the selection
+    setTimeout(function(){
+      var sel=window.getSelection();
+      var txt=sel?sel.toString().trim():'';
+      if(!txt||txt.length<5){closeHlMenu();return;}
+      var el=sel.anchorNode?
+        (sel.anchorNode.nodeType===3?sel.anchorNode.parentElement:sel.anchorNode):null;
+      var inAI=false;
+      while(el){if(el.classList&&el.classList.contains('bubble-ai')){inAI=true;break;}el=el.parentElement;}
+      if(!inAI){closeHlMenu();return;}
+      hlText=txt;hlTopicId=activeId;
+      document.getElementById('hl-prev').textContent=txt.slice(0,100)+(txt.length>100?'…':'');
+      var menu=document.getElementById('hl-menu');
+      var x=Math.min(clientX,innerWidth-200);
+      var y=Math.max(clientY-60,10);
+      menu.style.left=x+'px';
+      menu.style.top=y+'px';
+      menu.classList.add('show');
+    },100);
+  }
+  // Desktop
+  document.addEventListener('mouseup',function(e){
+    handleSelection(e.clientX,e.clientY);
+  });
+  // Mobile touch
+  document.addEventListener('touchend',function(e){
+    var touch=e.changedTouches[0];
+    if(touch) handleSelection(touch.clientX,touch.clientY);
   });
 }
 
@@ -2293,7 +2312,7 @@ async function hlAction(type){
   const sp=activeTopic?.specialty||'General';
   try{
     if(type==='fc'){
-      const fc=await safeFetch(`${API}/flashcards`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic_id:hlTopicId,specialty:sp,front:hlText,back:'[Review — saved from session]',source:'highlight'})});
+      const fc=await safeFetch(`${API}/flashcards`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic_id:hlTopicId,specialty:sp,front:hlText,back:'Highlighted from session. Review the full mechanism in context.',source:'highlight'})});
       flashcards.unshift(fc);renderFlashcards();updateTabLabels();showToast('🃏 Added to flashcards!','teal');
     }else{
       const c=await safeFetch(`${API}/concepts`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic_id:hlTopicId,specialty:sp,content:hlText,type:'highlight'})});

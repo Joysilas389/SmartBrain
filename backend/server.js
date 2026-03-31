@@ -258,9 +258,15 @@ app.post('/api/chat', async (req, res) => {
         if (!data || data === '[DONE]') continue;
         try {
           const parsed = JSON.parse(data);
+          // Capture text from any content block (including after tool use)
           if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
-            fullText += parsed.delta.text;
-            res.write(`data: ${JSON.stringify({ type: 'delta', text: parsed.delta.text })}\n\n`);
+            const chunk = parsed.delta.text;
+            fullText += chunk;
+            res.write(`data: ${JSON.stringify({ type: 'delta', text: chunk })}\n\n`);
+          }
+          // Also capture text content blocks that arrive as full blocks
+          if (parsed.type === 'content_block_start' && parsed.content_block?.type === 'text') {
+            // text will arrive as deltas, nothing to do here
           }
         } catch {}
       }
@@ -270,33 +276,34 @@ app.post('/api/chat', async (req, res) => {
     if (assistantMsgId && fullText) {
       msgOps.updateContent(assistantMsgId, fullText);
 
-      // Auto-extract flashcards — robust line-by-line parser
+      // Auto-extract flashcards
       if (topic_id) {
         const specialty = classifySpecialty(fullText);
+        // Try block format first: ---FLASHCARDS--- ... ---END-FLASHCARDS---
         const blockMatch = fullText.match(/---FLASHCARDS---([\s\S]*?)---END-FLASHCARDS---/);
-        if (blockMatch) {
-          const block = blockMatch[1];
-          const lines = block.split('\n');
-          let front = '', back = '', inBack = false;
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('FRONT:')) {
-              // Save previous card if complete
-              if (front && back && front.length > 5 && back.length > 5) {
-                fcOps.insert({ topic_id, specialty, front, back: back.trim(), source: 'ai' });
-              }
-              front = trimmed.slice(6).trim(); back = ''; inBack = false;
-            } else if (trimmed.startsWith('BACK:')) {
-              back = trimmed.slice(5).trim(); inBack = true;
-            } else if (inBack && trimmed && !trimmed.startsWith('---')) {
-              back += ' ' + trimmed; // multi-line back
+        const block = blockMatch ? blockMatch[1] : fullText;
+        const lines = block.split('\n');
+        let front = '', back = '', inBack = false;
+        let savedCount = 0;
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.toUpperCase().startsWith('FRONT:')) {
+            if (front && back && front.length > 5 && back.length > 5) {
+              fcOps.insert({ topic_id, specialty, front, back: back.trim(), source: 'ai' });
+              savedCount++;
             }
-          }
-          // Save last card
-          if (front && back && front.length > 5 && back.length > 5) {
-            fcOps.insert({ topic_id, specialty, front, back: back.trim(), source: 'ai' });
+            front = trimmed.slice(6).trim(); back = ''; inBack = false;
+          } else if (trimmed.toUpperCase().startsWith('BACK:')) {
+            back = trimmed.slice(5).trim(); inBack = true;
+          } else if (inBack && trimmed && !trimmed.startsWith('---') && !trimmed.startsWith('FRONT:')) {
+            back += ' ' + trimmed;
           }
         }
+        if (front && back && front.length > 5 && back.length > 5) {
+          fcOps.insert({ topic_id, specialty, front, back: back.trim(), source: 'ai' });
+          savedCount++;
+        }
+        console.log(\`Saved \${savedCount} flashcards for topic \${topic_id}\`);
       }
     }
 
