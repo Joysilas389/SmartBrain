@@ -2,7 +2,7 @@
 <html lang="en" data-bs-theme="dark">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SmartMedicine — Dr. Agbesi</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚕</text></svg>"/>
 
@@ -355,7 +355,7 @@ body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 1.25rem 1rem 0.75rem;
+  padding: 1.5rem 1rem 1rem;
 }
 
 /* Empty state */
@@ -378,7 +378,7 @@ body {
 }
 .av-user { background: linear-gradient(135deg, #004d33, #00897b); box-shadow: 0 0 14px rgba(0,137,123,0.3); }
 .av-ai   { background: linear-gradient(135deg, #001f77, #0044cc); box-shadow: 0 0 14px rgba(0,68,200,0.3); }
-.bubble { border-radius: 6px 14px 14px 14px; padding: 11px 14px; max-width: 88%; }
+.bubble { border-radius: 6px 14px 14px 14px; padding: 14px 18px; max-width: 92%; }
 .bubble-user {
   background: linear-gradient(135deg, rgba(0,90,60,0.2), rgba(0,137,123,0.12));
   border: 1px solid rgba(0,137,123,0.2);
@@ -402,7 +402,7 @@ body {
 @keyframes tdot { 0%,80%,100%{transform:scale(.65);opacity:.25} 40%{transform:scale(1);opacity:1} }
 
 /* Prose */
-.prose { font-size: 0.86rem; line-height: 1.75; color: var(--sm-text1); }
+.prose { font-size: 0.92rem; line-height: 1.8; color: var(--sm-text1); }
 .prose h1 { font-family: var(--sm-serif); font-style: italic; font-size: 1.25rem; color: var(--sm-amber); margin: 1.1em 0 0.4em; }
 .prose h2 { font-family: var(--sm-serif); font-style: italic; font-size: 1.05rem; color: var(--sm-teal); margin: 0.95em 0 0.3em; padding-bottom: 0.25em; border-bottom: 1px solid var(--sm-border); }
 .prose h3 { font-size: 0.92rem; font-weight: 700; color: #06d6a0; margin: 0.85em 0 0.3em; }
@@ -417,9 +417,11 @@ body {
 .prose blockquote { border-left: 3px solid var(--sm-amber); padding: 0.5em 0 0.5em 1em; margin: 0.8em 0; background: rgba(245,158,11,0.1); border-radius: 0 10px 10px 0; color: #fcd34d; font-style: italic; }
 .prose hr { border: none; border-top: 1px solid var(--sm-border); margin: 1.2em 0; }
 .prose table { width: 100%; border-collapse: collapse; margin: 0.75em 0; font-size: 0.82rem; border-radius: 10px; overflow: hidden; }
-.prose th { background: rgba(0,70,160,0.28); color: #fff; padding: 7px 10px; text-align: left; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.05em; border-bottom: 1px solid var(--sm-border); }
-.prose td { padding: 6px 10px; border-bottom: 1px solid var(--sm-border); color: var(--sm-text2); }
+.prose th { background: rgba(0,70,160,0.35); color: #fff; padding: 9px 12px; text-align: left; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.04em; border-bottom: 1px solid var(--sm-border); }
+.prose td { padding: 8px 12px; border-bottom: 1px solid var(--sm-border); color: var(--sm-text2); font-size: 0.88rem; }
 .prose tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+.prose svg, .mermaid-wrap svg { touch-action: pan-x pan-y pinch-zoom; max-width: 100%; height: auto; }
+.bubble-ai { touch-action: pan-x pan-y pinch-zoom; }
 .prose code { font-family: var(--sm-mono); font-size: 0.8em; background: rgba(20,184,166,0.1); border: 1px solid var(--sm-border); padding: 0.1em 0.35em; border-radius: 4px; color: #5eead4; }
 .prose pre { background: #030a16; border: 1px solid var(--sm-border); border-radius: 10px; margin: 0.75em 0; overflow: hidden; }
 .prose pre code { background: transparent; border: none; padding: 0; font-size: 0.78rem; }
@@ -427,9 +429,31 @@ body {
 
 /* Mermaid */
 .mermaid-wrap {
-  background: rgba(3,10,22,0.9); border: 1px solid rgba(20,184,166,0.2);
-  border-radius: 14px; padding: 1.2rem; margin: 0.75em 0; overflow-x: auto; position: relative;
+  background: linear-gradient(145deg, #0d1929 0%, #0a1520 100%);
+  border: 1px solid rgba(20,184,166,0.3);
+  border-radius: 16px; padding: 1.5rem; margin: 1em 0;
+  overflow: auto; position: relative;
+  touch-action: pan-x pan-y pinch-zoom;
+  -webkit-overflow-scrolling: touch;
+  cursor: grab;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(20,184,166,0.12);
 }
+.mermaid-wrap:active { cursor: grabbing; }
+.mermaid-wrap::after {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(20,184,166,0.5), transparent);
+}
+.mermaid-wrap svg { max-width: 100%; height: auto; font-family: "Nunito", sans-serif !important; }
+.mermaid-wrap .node rect, .mermaid-wrap .node circle, .mermaid-wrap .node polygon,
+.mermaid-wrap .node ellipse {
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+  stroke-width: 1.5px !important;
+}
+.mermaid-wrap .edgePath .path { stroke-width: 2px !important; }
+.mermaid-wrap .label foreignObject { overflow: visible !important; }
+.mermaid-wrap .label { font-size: 13px !important; font-weight: 600 !important; }
+.mermaid-wrap .edgeLabel { font-size: 11px !important; }
+.mermaid-wrap .cluster rect { rx: 8 !important; }
 .mermaid-wrap::before {
   content: 'DIAGRAM'; position: absolute; top: 7px; right: 12px;
   font-size: 0.52rem; font-weight: 700; letter-spacing: 0.15em; color: rgba(20,184,166,0.35); font-family: var(--sm-mono);
@@ -717,11 +741,21 @@ body {
 
       <select id="spec-select" class="form-select form-select-sm" onchange="updateSpecialty(this.value)"></select>
 
+      <!-- Search & Mastery buttons -->
+      <button class="btn-ham" data-bs-toggle="modal" data-bs-target="#searchModal" title="Search all sessions" style="flex-shrink:0">
+        <i class="bi bi-search" style="font-size:.85rem"></i>
+      </button>
+      <button class="btn-ham" data-bs-toggle="modal" data-bs-target="#masteryModal" onclick="renderMastery()" title="Mastery dashboard" style="flex-shrink:0">
+        <i class="bi bi-graph-up-arrow" style="font-size:.85rem"></i>
+      </button>
+
       <!-- Desktop tabs -->
       <div id="tab-row">
         <button class="tab-btn active" id="tb-chat" onclick="switchTab('chat')"><i class="bi bi-chat-text"></i> Chat</button>
         <button class="tab-btn" id="tb-fc" onclick="switchTab('fc')"><i class="bi bi-collection"></i> <span id="fc-lbl">Cards</span></button>
         <button class="tab-btn" id="tb-con" onclick="switchTab('con')"><i class="bi bi-bookmark"></i> <span id="con-lbl">Saved</span></button>
+        <button class="tab-btn" id="tb-pearl" onclick="switchTab('pearl')"><i class="bi bi-star"></i> Pearls</button>
+        <button class="tab-btn" id="tb-exam" onclick="switchTab('exam')"><i class="bi bi-clipboard2-pulse"></i> USMLE</button>
       </div>
     </div>
 
@@ -747,7 +781,14 @@ body {
           <div class="text-center"><div class="stat-num" id="ln-fc">0</div><div class="stat-lbl">Flashcards</div></div>
           <div class="text-center"><div class="stat-num">35</div><div class="stat-lbl">Subjects</div></div>
         </div>
-        <button class="btn-cta mb-5" onclick="newSession()">Begin Learning Session</button>
+        <div id="land-recent" style="display:none;margin-bottom:1.5rem">
+          <div style="font-size:.7rem;color:var(--sm-text3);letter-spacing:.14em;text-transform:uppercase;margin-bottom:.75rem">Continue Learning</div>
+          <div id="land-recent-list" style="display:flex;flex-direction:column;gap:6px;max-width:480px;margin:0 auto;text-align:left"></div>
+          <div style="height:1px;background:var(--sm-border);margin:1.25rem auto;max-width:480px"></div>
+        </div>
+        <button class="btn-cta mb-5" onclick="newSession()">
+          <i class="bi bi-plus-lg me-2"></i>New Learning Session
+        </button>
         <div>
           <div class="d-flex align-items-center gap-2 justify-content-center mb-3" style="font-size:.6rem;color:var(--sm-text3);letter-spacing:.18em;text-transform:uppercase">
             <div class="flex-grow-1" style="height:1px;background:var(--sm-border)"></div>
@@ -756,6 +797,26 @@ body {
           </div>
           <div class="row g-2" id="land-ex"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- ── LAYER STEPPER ── -->
+    <div class="layer-stepper" id="layer-stepper" style="display:none">
+      <div class="layer-step">
+        <div class="layer-dot" id="ld-0" onclick="jumpToLayer(0)" title="Layer 0: The Problem">0</div>
+        <div class="layer-line" id="ll-0"></div>
+        <div class="layer-dot" id="ld-1" onclick="jumpToLayer(1)" title="Layer 1: Simplest Picture">1</div>
+        <div class="layer-line" id="ll-1"></div>
+        <div class="layer-dot" id="ld-2" onclick="jumpToLayer(2)" title="Layer 2: Mechanism">2</div>
+        <div class="layer-line" id="ll-2"></div>
+        <div class="layer-dot" id="ld-3" onclick="jumpToLayer(3)" title="Layer 3: Integration">3</div>
+        <div class="layer-line" id="ll-3"></div>
+        <div class="layer-dot" id="ld-4" onclick="jumpToLayer(4)" title="Layer 4: Clinical">4</div>
+        <div class="layer-line" id="ll-4"></div>
+        <div class="layer-dot" id="ld-5" onclick="jumpToLayer(5)" title="Layer 5: Edge Cases">5</div>
+      </div>
+      <div style="margin-left:auto;font-size:.6rem;color:var(--sm-text3);white-space:nowrap;padding-left:10px">
+        Tap a layer to jump deeper
       </div>
     </div>
 
@@ -802,6 +863,56 @@ body {
         <div id="con-list"></div>
       </div>
 
+      <!-- Pearls pane -->
+      <div class="tab-pane-area" id="pane-pearl">
+        <div class="text-center py-5" id="pearl-empty">
+          <div style="font-size:2rem;opacity:.35;margin-bottom:.6rem">⭐</div>
+          <div style="font-family:var(--sm-serif);font-style:italic;color:var(--sm-text2)">No clinical pearls yet</div>
+          <div style="font-size:.78rem;color:var(--sm-text3);margin-top:.4rem">Pearls (★) are auto-extracted from AI responses</div>
+        </div>
+        <div id="pearl-list"></div>
+      </div>
+
+      <!-- USMLE Exam pane -->
+      <div class="tab-pane-area" id="pane-exam">
+        <div id="exam-idle" class="text-center py-4">
+          <div style="font-size:2rem;opacity:.35;margin-bottom:.6rem">📋</div>
+          <div style="font-family:var(--sm-serif);font-style:italic;font-size:1.1rem;color:var(--sm-text2);margin-bottom:.5rem">USMLE Exam Mode</div>
+          <div style="font-size:.82rem;color:var(--sm-text3);margin-bottom:1.5rem;line-height:1.6;max-width:400px;margin-left:auto;margin-right:auto">
+            Generate a USMLE-style clinical vignette from your current topic.<br/>
+            Answer, then get a full mechanism explanation.
+          </div>
+          <button class="btn-cta" style="font-size:.82rem;padding:10px 28px" onclick="generateExam()">
+            <i class="bi bi-clipboard2-pulse me-2"></i>Generate USMLE Question
+          </button>
+          <div id="exam-score-summary" style="margin-top:1.5rem;display:none">
+            <div style="font-size:.72rem;color:var(--sm-text3);margin-bottom:.4rem">SESSION SCORE</div>
+            <div id="exam-score-display" style="font-family:var(--sm-serif);font-size:1.6rem;color:var(--sm-teal)"></div>
+          </div>
+        </div>
+        <div id="exam-question" style="display:none">
+          <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem 1.1rem;margin-bottom:1rem">
+            <div style="font-size:.62rem;font-weight:700;letter-spacing:.12em;color:var(--sm-text3);margin-bottom:.6rem;font-family:var(--sm-mono)">CLINICAL VIGNETTE</div>
+            <div id="exam-vignette" style="font-size:.9rem;line-height:1.75;color:var(--sm-text1)"></div>
+            <div id="exam-stem" style="font-size:.9rem;font-weight:700;color:var(--sm-teal);margin-top:.75rem"></div>
+          </div>
+          <div id="exam-options" class="mb-3"></div>
+          <div id="exam-explanation" style="display:none;background:rgba(20,184,166,0.06);border:1px solid rgba(20,184,166,0.2);border-radius:12px;padding:1rem;font-size:.86rem;line-height:1.7;color:var(--sm-text1)"></div>
+          <div class="d-flex gap-2 mt-3" id="exam-controls" style="display:none!important">
+            <button class="btn btn-sm flex-grow-1" style="background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.25);color:var(--sm-teal);border-radius:10px;font-weight:700" onclick="generateExam()">
+              <i class="bi bi-arrow-repeat me-1"></i>Next Question
+            </button>
+            <button class="btn btn-sm" style="background:rgba(255,255,255,.05);border:1px solid var(--sm-border);color:var(--sm-text2);border-radius:10px" onclick="switchTab('chat')">
+              Back to Chat
+            </button>
+          </div>
+        </div>
+        <div id="exam-loading" style="display:none" class="text-center py-4">
+          <div class="typing-dots justify-content-center"><span></span><span></span><span></span></div>
+          <div style="font-size:.78rem;color:var(--sm-text3);margin-top:.75rem">Generating USMLE question from your session…</div>
+        </div>
+      </div>
+
       <!-- Input zone (only shown in chat tab) -->
       <div id="input-zone">
         <div class="qp-row" id="qp-row"></div>
@@ -830,8 +941,9 @@ body {
       <div class="d-flex w-100">
         <button class="bnav-btn active" id="bn-chat" onclick="switchTab('chat')"><i class="bi bi-chat-text"></i><span>Chat</span></button>
         <button class="bnav-btn" id="bn-fc" onclick="switchTab('fc')"><i class="bi bi-collection"></i><span id="bn-fc-lbl">Cards</span></button>
-        <button class="bnav-btn" id="bn-con" onclick="switchTab('con')"><i class="bi bi-bookmark"></i><span id="bn-con-lbl">Saved</span></button>
-        <button class="bnav-btn" data-bs-toggle="offcanvas" data-bs-target="#mob-sidebar"><i class="bi bi-list"></i><span>Topics</span></button>
+        <button class="bnav-btn" id="bn-pearl" onclick="switchTab('pearl')"><i class="bi bi-star"></i><span>Pearls</span></button>
+        <button class="bnav-btn" id="bn-exam" onclick="switchTab('exam')"><i class="bi bi-clipboard2-pulse"></i><span>USMLE</span></button>
+        <button class="bnav-btn" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="bi bi-search"></i><span>Search</span></button>
       </div>
     </div>
 
@@ -937,7 +1049,32 @@ body {
 })();
 
 /* ══ MERMAID + MARKED ══════════════════════════════════════════════ */
-mermaid.initialize({startOnLoad:false,theme:'dark',themeVariables:{background:'#030a18',primaryColor:'#0a2050',primaryTextColor:'#dce9ff',primaryBorderColor:'#1a4080',lineColor:'#14b8a6',secondaryColor:'#0a3040',tertiaryColor:'#0f1e3a',titleColor:'#f59e0b',nodeTextColor:'#dce9ff',edgeLabelBackground:'#0a1830',fontFamily:"'JetBrains Mono',monospace",fontSize:'12px',clusterBkg:'#0a1828'},flowchart:{htmlLabels:true,curve:'basis',padding:14},sequence:{actorMargin:60,messageMargin:40}});
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  themeVariables: {
+    background:        '#0d1929',
+    primaryColor:      '#1a3a6b',
+    primaryTextColor:  '#ffffff',
+    primaryBorderColor:'#2563a8',
+    secondaryColor:    '#0f7173',
+    tertiaryColor:     '#4a1d96',
+    lineColor:         '#14b8a6',
+    edgeLabelBackground:'#0d1929',
+    clusterBkg:        '#132448',
+    titleColor:        '#f59e0b',
+    nodeBorder:        '#2563a8',
+    fontFamily:        "'Nunito', sans-serif",
+    fontSize:          '13px',
+    nodeTextColor:     '#ffffff',
+    labelTextColor:    '#ffffff',
+    mainBkg:           '#1a3a6b',
+    secondBkg:         '#0f7173',
+    tertiaryTextColor: '#ffffff',
+  },
+  flowchart: { htmlLabels: true, curve: 'basis', padding: 18, nodeSpacing: 50, rankSpacing: 60 },
+  sequence:  { actorMargin: 60, messageMargin: 40 }
+});
 marked.setOptions({breaks:true,gfm:true});
 
 /* ══ CONFIG ════════════════════════════════════════════════════════ */
@@ -1145,10 +1282,45 @@ function toggleDesktopSb() {
 async function loadTopics() {
   try {
     topics = await safeFetch(`${API}/topics`);
-    renderTopics(); updateStats();
+    renderTopics(); updateStats(); updateLandingRecent();
   } catch(e) {
     console.warn('loadTopics:', e.message);
     showToast('⚠ ' + e.message, 'danger');
+  }
+}
+
+function updateLandingRecent() {
+  const recent = document.getElementById('land-recent');
+  const list   = document.getElementById('land-recent-list');
+  if (!recent || !list) return;
+  if (topics.length === 0) { recent.style.display = 'none'; return; }
+  recent.style.display = 'block';
+  list.innerHTML = '';
+  // Show up to 4 most recent topics
+  topics.slice(0, 4).forEach(t => {
+    const sc  = 'sp-' + t.specialty.replace(/ /g,'_');
+    const btn = document.createElement('button');
+    btn.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid var(--sm-border);border-radius:12px;padding:10px 14px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-family:var(--sm-sans)';
+    btn.innerHTML = `
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.85rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.title)}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+          <span class="badge rounded-pill ${sc}" style="font-size:.56rem">${t.specialty}</span>
+          ${t.message_count>0?`<span style="font-size:.65rem;color:var(--sm-text3)"><i class="bi bi-chat-text"></i> ${t.message_count} messages</span>`:''}
+          ${t.flashcard_count>0?`<span style="font-size:.65rem;color:var(--sm-amber)"><i class="bi bi-collection"></i> ${t.flashcard_count} cards</span>`:''}
+        </div>
+      </div>
+      <i class="bi bi-arrow-right-circle" style="color:var(--sm-teal);font-size:1.1rem;flex-shrink:0"></i>`;
+    btn.onmouseover = () => { btn.style.background='rgba(20,184,166,0.07)'; btn.style.borderColor='rgba(20,184,166,0.3)'; };
+    btn.onmouseout  = () => { btn.style.background='rgba(255,255,255,0.03)'; btn.style.borderColor='var(--sm-border)'; };
+    btn.onclick = () => selectTopic(t.id);
+    list.appendChild(btn);
+  });
+  if (topics.length > 4) {
+    const more = document.createElement('div');
+    more.style.cssText = 'text-align:center;font-size:.72rem;color:var(--sm-text3);padding-top:4px';
+    more.textContent = `+ ${topics.length - 4} more topics in sidebar`;
+    list.appendChild(more);
   }
 }
 
@@ -1563,6 +1735,516 @@ function showToast(msg,color='teal'){
 
 /* ══ HELPERS ════════════════════════════════════════════════════════ */
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+
+/* ══ FEATURE: LAYER STEPPER ════════════════════════════════════════ */
+let currentLayer = 0;
+
+function updateLayerStepper(layer) {
+  currentLayer = Math.min(5, Math.max(0, layer));
+  for (let i = 0; i <= 5; i++) {
+    const dot  = document.getElementById('ld-'+i);
+    const line = document.getElementById('ll-'+i);
+    if (!dot) continue;
+    dot.className = 'layer-dot' + (i === currentLayer ? ' active' : i < currentLayer ? ' done' : '');
+    if (line) line.className = 'layer-line' + (i < currentLayer ? ' done' : '');
+  }
+}
+
+function jumpToLayer(layer) {
+  const prompts = [
+    'Start again from Layer 0 — what is the core problem this system is solving?',
+    'Go back to Layer 1 — give me the simplest 3-element picture with zero jargon',
+    'Drill deeper into Layer 2 — walk me through the full causal chain step by step',
+    'Move to Layer 3 — how does this connect across cell, tissue, organ, and system level?',
+    'Take me to Layer 4 — walk me into the ward. What do I see, hear, investigate, and treat?',
+    'Push to Layer 5 — what are the edge cases, exceptions, and contrast conditions?',
+  ];
+  injectPrompt(prompts[layer]);
+  updateLayerStepper(layer);
+}
+
+// Detect layer from AI response text
+function detectLayerFromText(text) {
+  if (!text) return;
+  const lower = text.toLowerCase();
+  if (lower.includes('layer 5') || lower.includes('edge case') || lower.includes('contrast')) updateLayerStepper(5);
+  else if (lower.includes('layer 4') || lower.includes('clinical') || lower.includes('walk into')) updateLayerStepper(4);
+  else if (lower.includes('layer 3') || lower.includes('integration') || lower.includes('organ level')) updateLayerStepper(3);
+  else if (lower.includes('layer 2') || lower.includes('mechanism') || lower.includes('causal chain') || lower.includes('because →')) updateLayerStepper(2);
+  else if (lower.includes('layer 1') || lower.includes('simplest picture') || lower.includes('three elements')) updateLayerStepper(1);
+  else if (lower.includes('layer 0') || lower.includes('the problem') || lower.includes('what problem')) updateLayerStepper(0);
+}
+
+/* ══ FEATURE: CLINICAL PEARL EXTRACTOR ════════════════════════════ */
+let pearls = [];
+
+function extractAndSavePearls(text, topicId, specialty) {
+  if (!text) return;
+  // Match ★ PEARL: ... patterns
+  const pearlRegex = /★\s*(?:PEARL[:\s]+)?(.+?)(?=
+★|
+##|
+---|
+📋|$)/gs;
+  let m;
+  while ((m = pearlRegex.exec(text)) !== null) {
+    const content = m[1].trim().replace(/\*\*/g, '').slice(0, 300);
+    if (content.length > 20) {
+      pearls.push({ id: Date.now()+Math.random(), content, specialty, topicId, created_at: new Date().toISOString() });
+    }
+  }
+  renderPearls();
+}
+
+function renderPearls() {
+  const empty = document.getElementById('pearl-empty');
+  const list  = document.getElementById('pearl-list');
+  if (!empty || !list) return;
+  if (pearls.length === 0) { empty.style.display='block'; list.innerHTML=''; return; }
+  empty.style.display = 'none';
+  list.innerHTML = '';
+  const grouped = {};
+  pearls.forEach(p => { if (!grouped[p.specialty]) grouped[p.specialty]=[]; grouped[p.specialty].push(p); });
+  for (const [spec, ps] of Object.entries(grouped)) {
+    const sc = 'sp-'+spec.replace(/ /g,'_');
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--sm-text3);padding:8px 0 4px';
+    hdr.innerHTML = `<span class="badge rounded-pill ${sc}" style="font-size:.6rem">${spec}</span> <span style="margin-left:4px">${ps.length} pearl${ps.length>1?'s':''}</span>`;
+    list.appendChild(hdr);
+    ps.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'pearl-card';
+      card.innerHTML = `<span class="pearl-star">★</span><span style="font-size:.84rem;color:var(--sm-text1);line-height:1.6">${esc(p.content)}</span>`;
+      list.appendChild(card);
+    });
+  }
+}
+
+/* ══ FEATURE: SPACED REPETITION (SM-2 simplified) ═════════════════ */
+const FC_REVIEW_KEY = 'sm_fc_review';
+
+function getFcReviewData() {
+  try { return JSON.parse(localStorage.getItem(FC_REVIEW_KEY) || '{}'); } catch { return {}; }
+}
+function saveFcReviewData(data) {
+  try { localStorage.setItem(FC_REVIEW_KEY, JSON.stringify(data)); } catch {}
+}
+
+function markFcReviewed(fcId, knew) {
+  const data = getFcReviewData();
+  const now  = Date.now();
+  const prev = data[fcId] || { interval: 1, reps: 0 };
+  if (knew) {
+    prev.reps++;
+    prev.interval = prev.reps === 1 ? 1 : prev.reps === 2 ? 3 : Math.round(prev.interval * 2.5);
+  } else {
+    prev.reps = 0;
+    prev.interval = 1;
+  }
+  prev.nextDue = now + (prev.interval * 24 * 60 * 60 * 1000);
+  data[fcId] = prev;
+  saveFcReviewData(data);
+  updateDueBanner();
+}
+
+function getDueFlashcards() {
+  const data = getFcReviewData();
+  const now  = Date.now();
+  return flashcards.filter(fc => {
+    const r = data[fc.id];
+    return !r || r.nextDue <= now;
+  });
+}
+
+function updateDueBanner() {
+  const due    = getDueFlashcards();
+  const banner = document.getElementById('due-banner');
+  const count  = document.getElementById('due-count');
+  if (!banner) return;
+  if (due.length > 0 && activeId) {
+    banner.style.display = 'flex';
+    if (count) count.textContent = due.length;
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function openSpacedRepReview() {
+  studyCards = getDueFlashcards();
+  studyIdx = 0; studyFlipped = false;
+  if (!studyCards.length) return;
+  renderStudyCard();
+  studyModal.show();
+  document.getElementById('due-banner').style.display = 'none';
+}
+
+// Patch study modal to track reviews
+const _origFlipStudy = typeof flipStudy === 'function' ? flipStudy : null;
+
+/* ══ FEATURE: MASTERY DASHBOARD ════════════════════════════════════ */
+function renderMastery() {
+  const body = document.getElementById('mastery-body');
+  if (!body) return;
+
+  // Calculate mastery per specialty from topics, messages, flashcards, concepts
+  const specialties = ['Cardiology','Respiratory','Nephrology','Neurology','Endocrinology','Haematology','Gastroenterology','Pharmacology','Infectious Disease','Surgery','Obstetrics','Paediatrics','Psychiatry','Anatomy','Physiology','Biochemistry','Pathology','Microbiology'];
+  
+  const fcBySpec    = {};
+  const topicBySpec = {};
+  flashcards.forEach(f => { fcBySpec[f.specialty] = (fcBySpec[f.specialty]||0)+1; });
+  topics.forEach(t => { topicBySpec[t.specialty] = (topicBySpec[t.specialty]||0)+1; });
+
+  const activeSpecs = [...new Set([
+    ...Object.keys(fcBySpec),
+    ...Object.keys(topicBySpec)
+  ])].filter(s => s && s !== 'General');
+
+  if (activeSpecs.length === 0) {
+    body.innerHTML = `<div class="text-center py-4" style="color:var(--sm-text3);font-size:.82rem">
+      Start learning sessions to see your mastery progress here.
+    </div>`;
+    return;
+  }
+
+  const colors = ['#14b8a6','#3b82f6','#a78bfa','#f59e0b','#f43f5e','#06d6a0','#ff9800','#e879f9'];
+  
+  body.innerHTML = `
+    <div style="font-size:.65rem;color:var(--sm-text3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:1rem">Your Learning Map</div>
+    ${activeSpecs.map((spec, i) => {
+      const color   = colors[i % colors.length];
+      const topics_ = topicBySpec[spec] || 0;
+      const cards   = fcBySpec[spec] || 0;
+      // Score: topics*20 + cards*5, capped at 100
+      const score   = Math.min(100, topics_ * 20 + cards * 5);
+      const sc      = 'sp-'+spec.replace(/ /g,'_');
+      return `
+        <div class="mastery-bar-wrap">
+          <div class="mastery-bar-label">
+            <span style="display:flex;align-items:center;gap:6px">
+              <span class="badge rounded-pill ${sc}" style="font-size:.56rem">${spec}</span>
+              <span style="font-size:.7rem;color:var(--sm-text3)">${topics_} session${topics_!==1?'s':''} · ${cards} card${cards!==1?'s':''}</span>
+            </span>
+            <span style="font-size:.75rem;font-weight:700;color:${color}">${score}%</span>
+          </div>
+          <div class="mastery-bar">
+            <div class="mastery-bar-fill" style="width:${score}%;background:linear-gradient(90deg,${color}88,${color})"></div>
+          </div>
+        </div>`;
+    }).join('')}
+    <div style="margin-top:1.25rem;padding:12px 14px;background:rgba(20,184,166,0.06);border:1px solid rgba(20,184,166,0.15);border-radius:12px">
+      <div style="font-size:.65rem;color:var(--sm-text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">USMLE Readiness</div>
+      <div style="font-family:var(--sm-serif);font-style:italic;font-size:1rem;color:var(--sm-text1)">
+        ${topics.length} topics mastered · ${flashcards.length} mechanisms encoded
+      </div>
+      <div style="font-size:.78rem;color:var(--sm-text3);margin-top:.3rem">
+        Strong in: ${activeSpecs.slice(0,3).join(', ')}
+      </div>
+    </div>`;
+}
+
+/* ══ FEATURE: QUICK CAPTURE ════════════════════════════════════════ */
+let quickCaptureModal;
+
+function openQuickCapture() {
+  if (!quickCaptureModal) quickCaptureModal = new bootstrap.Modal(document.getElementById('quickCaptureModal'));
+  document.getElementById('qc-input').value = '';
+  quickCaptureModal.show();
+  setTimeout(() => document.getElementById('qc-input').focus(), 400);
+}
+
+async function saveQuickCapture() {
+  const text = document.getElementById('qc-input').value.trim();
+  if (!text) return;
+  // Classify and save as concept, then start a new session with it
+  const specialty = classifyText(text);
+  if (quickCaptureModal) quickCaptureModal.hide();
+  showToast('📝 Captured — starting learning session…', 'teal');
+  await newSession('I want to understand this from first principles: ' + text);
+}
+
+// Client-side classifier (backup when no activeId)
+function classifyText(text) {
+  const lower = text.toLowerCase();
+  const map = {
+    'Cardiology': ['heart','cardiac','coronary','ecg','angina','infarct'],
+    'Endocrinology': ['diabetes','insulin','glucose','thyroid','dka','cortisol'],
+    'Respiratory': ['lung','respiratory','asthma','copd','pneumonia','oxygen'],
+    'Nephrology': ['kidney','renal','creatinine','gfr','dialysis'],
+    'Neurology': ['brain','stroke','seizure','neuro','nerve'],
+    'Pharmacology': ['drug','receptor','mechanism','inhibitor','agonist'],
+  };
+  for (const [spec, kws] of Object.entries(map)) {
+    if (kws.some(k => lower.includes(k))) return spec;
+  }
+  return 'General';
+}
+
+/* ══ FEATURE: GLOBAL SEARCH ════════════════════════════════════════ */
+let searchModal;
+function openSearch() {
+  if (!searchModal) searchModal = new bootstrap.Modal(document.getElementById('searchModal'));
+  searchModal.show();
+  setTimeout(() => document.getElementById('global-search-input').focus(), 400);
+}
+
+function runGlobalSearch(query) {
+  const results = document.getElementById('search-results');
+  const empty   = document.getElementById('search-empty');
+  const prompt  = document.getElementById('search-prompt');
+  if (!query || query.length < 2) {
+    results.innerHTML = '';
+    empty.style.display   = 'none';
+    prompt.style.display  = 'block';
+    return;
+  }
+  prompt.style.display = 'none';
+  const q = query.toLowerCase();
+  // Search across all topics and their titles/specialties + flashcards
+  const matches = [];
+  topics.forEach(t => {
+    if (t.title.toLowerCase().includes(q) || t.specialty.toLowerCase().includes(q)) {
+      matches.push({ type: 'topic', topic: t, text: t.title, specialty: t.specialty });
+    }
+  });
+  flashcards.forEach(fc => {
+    if (fc.front.toLowerCase().includes(q) || fc.back.toLowerCase().includes(q)) {
+      matches.push({ type: 'flashcard', fc, text: fc.front, specialty: fc.specialty });
+    }
+  });
+  pearls.forEach(p => {
+    if (p.content.toLowerCase().includes(q)) {
+      matches.push({ type: 'pearl', pearl: p, text: p.content, specialty: p.specialty });
+    }
+  });
+
+  if (matches.length === 0) { results.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display = 'none';
+  results.innerHTML = matches.slice(0,12).map(m => {
+    const sc = 'sp-'+(m.specialty||'General').replace(/ /g,'_');
+    const icon = m.type==='topic' ? 'bi-chat-text' : m.type==='flashcard' ? 'bi-collection' : 'bi-star';
+    const highlighted = esc(m.text).replace(new RegExp(esc(query),'gi'), s => `<span class="search-highlight">${s}</span>`);
+    return `<div class="search-result" onclick="handleSearchClick('${m.type}','${m.type==='topic'?m.topic.id:m.type==='flashcard'?m.fc.id:m.pearl.id}')">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+        <i class="bi ${icon}" style="color:var(--sm-teal);font-size:.8rem"></i>
+        <span class="badge rounded-pill ${sc}" style="font-size:.54rem">${m.specialty}</span>
+        <span style="font-size:.62rem;color:var(--sm-text3);text-transform:uppercase;letter-spacing:.08em">${m.type}</span>
+      </div>
+      <div style="font-size:.82rem;color:var(--sm-text1);line-height:1.5">${highlighted}</div>
+    </div>`;
+  }).join('');
+}
+
+function handleSearchClick(type, id) {
+  const modal = bootstrap.Modal.getInstance(document.getElementById('searchModal'));
+  if (modal) modal.hide();
+  if (type === 'topic') {
+    selectTopic(id);
+  } else if (type === 'flashcard') {
+    switchTab('fc');
+  } else {
+    switchTab('pearl');
+  }
+}
+
+/* ══ FEATURE: USMLE EXAM MODE ══════════════════════════════════════ */
+let examScore = { correct: 0, total: 0 };
+let examAnswered = false;
+
+async function generateExam() {
+  if (!activeId || !activeTopic) { showToast('Start a learning session first', 'amber'); return; }
+  document.getElementById('exam-idle').style.display     = 'none';
+  document.getElementById('exam-question').style.display = 'none';
+  document.getElementById('exam-loading').style.display  = 'block';
+
+  const prompt = `Generate a USMLE Step 1/2 style clinical vignette question about ${activeTopic.title || 'this topic'} (${activeTopic.specialty}). 
+
+Format your response EXACTLY like this:
+VIGNETTE: [2-4 sentence clinical scenario with patient details, symptoms, exam findings, labs]
+STEM: [The actual question — "What is the most likely mechanism?" or "Which finding best explains?" etc]
+A: [Option A]
+B: [Option B]
+C: [Option C]
+D: [Option D]
+CORRECT: [A, B, C, or D]
+EXPLANATION: [Full mechanism explanation of why the correct answer is right and why the others are wrong — use the Agbesi method, trace to first principles]`;
+
+  try {
+    const res = await fetch(`${API}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], topic_id: null })
+    });
+    const reader = res.body.getReader();
+    const dec    = new TextDecoder();
+    let buf = '', full = '';
+    while (true) {
+      const { done, value } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('
+'); buf = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try { const d = JSON.parse(line.slice(6)); if (d.type==='delta') full += d.text; } catch {}
+      }
+    }
+    renderExamQuestion(full);
+  } catch(e) {
+    showToast('⚠ Could not generate question: ' + e.message, 'danger');
+    document.getElementById('exam-loading').style.display = 'none';
+    document.getElementById('exam-idle').style.display    = 'block';
+  }
+}
+
+function renderExamQuestion(text) {
+  document.getElementById('exam-loading').style.display = 'none';
+  const get = (key) => {
+    const m = text.match(new RegExp(key + ':\s*(.+?)(?=\n[A-Z]+:|$)', 's'));
+    return m ? m[1].trim() : '';
+  };
+  const vignette    = get('VIGNETTE');
+  const stem        = get('STEM');
+  const options     = ['A','B','C','D'].map(l => ({ letter: l, text: get(l) })).filter(o => o.text);
+  const correctLetter = get('CORRECT').trim().toUpperCase().charAt(0);
+  const explanation = get('EXPLANATION');
+
+  if (!vignette || options.length < 2) {
+    showToast('Could not parse question format — try again', 'amber');
+    document.getElementById('exam-idle').style.display = 'block';
+    return;
+  }
+
+  examAnswered = false;
+  document.getElementById('exam-vignette').textContent    = vignette;
+  document.getElementById('exam-stem').textContent        = stem;
+  document.getElementById('exam-explanation').style.display = 'none';
+  document.getElementById('exam-controls').style.removeProperty('display');
+  document.getElementById('exam-controls').style.display  = 'none';
+
+  const optWrap = document.getElementById('exam-options');
+  optWrap.innerHTML = options.map(o => `
+    <button class="exam-option" onclick="answerExam('${o.letter}','${correctLetter}',\`${explanation.replace(/`/g,"'")}\`)">
+      <span class="exam-letter">${o.letter}</span>
+      <span>${esc(o.text)}</span>
+    </button>`).join('');
+
+  document.getElementById('exam-question').style.display = 'block';
+}
+
+function answerExam(chosen, correct, explanation) {
+  if (examAnswered) return;
+  examAnswered = true;
+  const isCorrect = chosen === correct;
+  examScore.total++;
+  if (isCorrect) examScore.correct++;
+
+  // Style all options
+  document.querySelectorAll('.exam-option').forEach(btn => {
+    const letter = btn.querySelector('.exam-letter').textContent;
+    if (letter === correct) btn.classList.add('correct');
+    else if (letter === chosen && !isCorrect) btn.classList.add('wrong');
+    btn.disabled = true;
+  });
+
+  // Show explanation
+  const expEl = document.getElementById('exam-explanation');
+  expEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:.6rem">
+      ${isCorrect
+        ? '<span style="color:#6ee7b7;font-weight:700;font-size:.9rem"><i class="bi bi-check-circle-fill me-1"></i>Correct!</span>'
+        : `<span style="color:#fda4af;font-weight:700;font-size:.9rem"><i class="bi bi-x-circle-fill me-1"></i>Incorrect — Answer is ${correct}</span>`
+      }
+      <span style="margin-left:auto;font-size:.72rem;color:var(--sm-text3)">${examScore.correct}/${examScore.total} correct</span>
+    </div>
+    <div style="font-size:.85rem;line-height:1.7">${esc(explanation)}</div>`;
+  expEl.style.display = 'block';
+  document.getElementById('exam-controls').style.removeProperty('display');
+  document.getElementById('exam-controls').style.display = 'flex';
+
+  // Update score display
+  const scoreEl = document.getElementById('exam-score-summary');
+  const scoreDisp = document.getElementById('exam-score-display');
+  if (scoreEl && scoreDisp) {
+    scoreEl.style.display = 'block';
+    const pct = Math.round(examScore.correct/examScore.total*100);
+    scoreDisp.textContent = `${examScore.correct}/${examScore.total} (${pct}%)`;
+    scoreDisp.style.color = pct >= 70 ? 'var(--sm-teal)' : pct >= 50 ? 'var(--sm-amber)' : 'var(--sm-danger)';
+  }
+}
+
+/* ══ PATCH: switchTab — add pearl, exam, search ════════════════════ */
+const _origSwitchTab = switchTab;
+switchTab = function(tab) {
+  _origSwitchTab(tab);
+  // Handle new tabs
+  const pearlPane = document.getElementById('pane-pearl');
+  const examPane  = document.getElementById('pane-exam');
+  if (pearlPane) pearlPane.style.display  = tab==='pearl' ? 'block' : 'none';
+  if (examPane)  examPane.style.display   = tab==='exam'  ? 'block' : 'none';
+  // Desktop tab active states for new tabs
+  ['pearl','exam'].forEach(t => {
+    const btn = document.getElementById('tb-'+t);
+    const bn  = document.getElementById('bn-'+t);
+    if (btn) btn.classList.toggle('active', t===tab);
+    if (bn)  bn.classList.toggle('active', t===tab);
+  });
+  // Show/hide FAB
+  const fab = document.getElementById('fab-btn');
+  if (fab) fab.style.display = (tab==='chat' && activeId) ? 'flex' : 'none';
+  // Show/hide input zone only in chat
+  const iz = document.getElementById('input-zone');
+  if (iz) iz.style.display = tab==='chat' ? 'block' : 'none';
+};
+
+/* ══ PATCH: updateLastBubble — extract pearls + detect layers ══════ */
+const _origUpdateLastBubble = updateLastBubble;
+updateLastBubble = function() {
+  _origUpdateLastBubble();
+  const last = messages[messages.length-1];
+  if (last && last.role==='assistant' && last.content) {
+    extractAndSavePearls(last.content, activeId, activeTopic?.specialty||'General');
+    detectLayerFromText(last.content);
+  }
+};
+
+/* ══ PATCH: selectTopic — show layer stepper + FAB + due banner ════ */
+const _origSelectTopic = selectTopic;
+selectTopic = async function(id) {
+  await _origSelectTopic(id);
+  const stepper = document.getElementById('layer-stepper');
+  if (stepper) stepper.style.display = 'flex';
+  const fab = document.getElementById('fab-btn');
+  if (fab) fab.style.display = 'flex';
+  updateDueBanner();
+  updateLayerStepper(0);
+};
+
+/* ══ PATCH: renderStudyCard — add spaced rep buttons ══════════════ */
+const _origRenderStudyCard = renderStudyCard;
+renderStudyCard = function() {
+  _origRenderStudyCard();
+  // Add knew/didn't know buttons to modal footer
+  const footer = document.querySelector('#studyModal .modal-footer');
+  if (footer && !footer.querySelector('.sr-btn')) {
+    const knew = document.createElement('button');
+    knew.className = 'modal-btn modal-btn-teal sr-btn';
+    knew.innerHTML = '<i class="bi bi-check2 me-1"></i>Got it';
+    knew.style.cssText = 'font-size:.72rem';
+    knew.onclick = () => {
+      if (studyCards[studyIdx]) markFcReviewed(studyCards[studyIdx].id, true);
+      studyNav(1);
+    };
+    const hard = document.createElement('button');
+    hard.className = 'modal-btn modal-btn-ghost sr-btn';
+    hard.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Again';
+    hard.style.cssText = 'font-size:.72rem';
+    hard.onclick = () => {
+      if (studyCards[studyIdx]) markFcReviewed(studyCards[studyIdx].id, false);
+    };
+    footer.insertBefore(hard, footer.firstChild);
+    footer.insertBefore(knew, footer.firstChild);
+  }
+};
 
 /* ══ BOOT ════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', init);
