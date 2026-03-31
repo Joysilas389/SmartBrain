@@ -2599,6 +2599,204 @@ function answerExam(chosen, correct, explanation) {
 
 
 
+
+/* ══ FILE ATTACHMENT ════════════════════════════════════════════════ */
+var attachedFile   = null;
+var attachedStored = null;
+
+function triggerAttach() {
+  var fi = document.getElementById('file-input');
+  if (fi) fi.click();
+}
+
+function handleFileAttach(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var ext = file.name.split('.').pop().toLowerCase();
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    attachedFile = { name: file.name, type: file.type || 'text/plain', size: file.size, dataUrl: e.target.result };
+    attachedStored = attachedFile;
+    var preview = document.getElementById('attach-preview');
+    var badge   = document.getElementById('attach-name');
+    if (preview) preview.style.display = 'block';
+    if (badge)   badge.textContent = file.name.length > 28 ? file.name.slice(0,25) + '\u2026' : file.name;
+    var btn = document.getElementById('attach-btn');
+    if (btn) btn.classList.add('has-file');
+    showToast('\uD83D\uDCCE ' + file.name + ' attached', 'teal');
+    var inp = document.getElementById('msg-input');
+    if (inp && !inp.value.trim()) {
+      var isImg = file.type.startsWith('image/');
+      inp.value = isImg
+        ? 'Analyse this image from first principles. If it is an ECG, give a full systematic 12-lead interpretation with mechanism.'
+        : 'Explain this document from first principles using the Agbesi method. Build layer by layer. Identify all mechanisms and clinical pearls.';
+      updateCC();
+    }
+  };
+  var isText = ['text/plain','text/markdown'].includes(file.type) || ['txt','md'].includes(ext);
+  if (isText) reader.readAsText(file);
+  else reader.readAsDataURL(file);
+}
+
+function clearAttach() {
+  attachedFile = null; attachedStored = null;
+  var preview = document.getElementById('attach-preview');
+  if (preview) preview.style.display = 'none';
+  var btn = document.getElementById('attach-btn');
+  if (btn) btn.classList.remove('has-file');
+  var fi = document.getElementById('file-input');
+  if (fi) fi.value = '';
+  showToast('Attachment removed', 'amber');
+}
+
+function restoreAttachment() {
+  if (attachedStored && !attachedFile) {
+    attachedFile = attachedStored;
+    var preview = document.getElementById('attach-preview');
+    var badge   = document.getElementById('attach-name');
+    if (preview) preview.style.display = 'block';
+    if (badge)   badge.textContent = attachedFile.name.length > 28 ? attachedFile.name.slice(0,25) + '\u2026' : attachedFile.name;
+    var btn = document.getElementById('attach-btn');
+    if (btn) btn.classList.add('has-file');
+  }
+}
+
+/* ══ QUICK PROMPT DROPDOWN ═══════════════════════════════════════ */
+function handleQPSelect(sel) {
+  if (!sel || !sel.value) return;
+  injectPrompt(sel.value);
+  sel.value = '';
+  var inp = document.getElementById('msg-input');
+  if (inp) inp.focus();
+}
+
+/* ══ SEND WITH ATTACHMENT ════════════════════════════════════════ */
+var _baseCoreSend = sendMessage;
+sendMessage = async function() {
+  if (attachedFile && activeId) {
+    var el  = document.getElementById('msg-input');
+    var txt = el ? el.value.trim() : '';
+    if (!txt || loading) return;
+    if (el) { el.value = ''; updateCC(); }
+
+    var fileLabel = '[Attached: ' + attachedFile.name + ']\n\n';
+    messages.push({ role:'user', content: fileLabel + txt });
+    messages.push({ role:'assistant', content:'' });
+    renderMessages(); scrollBottom(); setLoading(true);
+
+    var hist = messages.slice(0,-1).map(function(m){ return {role:m.role,content:m.content}; });
+    var userMsg;
+    if (attachedFile.type.startsWith('image/')) {
+      userMsg = { role:'user', content:[
+        { type:'image', source:{ type:'base64', media_type:attachedFile.type, data:attachedFile.dataUrl.split(',')[1] } },
+        { type:'text', text:txt }
+      ]};
+    } else {
+      userMsg = { role:'user', content: fileLabel + txt };
+    }
+    hist[hist.length-1] = userMsg;
+
+    try {
+      var abortCtrl2 = new AbortController(); abortCtrl = abortCtrl2;
+      var res = await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:hist,topic_id:activeId}),signal:abortCtrl2.signal});
+      if(!res.ok){var t2=await res.text();throw new Error('Server '+res.status+': '+t2.slice(0,100));}
+      var reader2=res.body.getReader(),dec2=new TextDecoder(),buf2='';
+      while(true){
+        var rv2=await reader2.read();if(rv2.done)break;
+        buf2+=dec2.decode(rv2.value,{stream:true});
+        var lines2=buf2.split('\n');buf2=lines2.pop()||'';
+        for(var li=0;li<lines2.length;li++){
+          if(!lines2[li].startsWith('data: '))continue;
+          try{
+            var d2=JSON.parse(lines2[li].slice(6));
+            if(d2.type==='delta'){messages[messages.length-1].content+=d2.text;updateLastBubble();}
+            if(d2.type==='done'){
+              try{flashcards=await safeFetch(API+'/flashcards/topic/'+activeId);renderFlashcards();updateTabLabels();await loadTopics();}catch(e){}
+              var fm=messages[messages.length-1];
+              if(fm&&fm.role==='assistant'&&fm.content){
+                extractAndSavePearls(fm.content,activeId,activeTopic?activeTopic.specialty:'General');
+                extractAnchors(fm.content,activeTopic?activeTopic.specialty:'General');
+              }
+            }
+          }catch(e){}
+        }
+      }
+    } catch(e) {
+      if(e.name!=='AbortError'){messages[messages.length-1].content='\u274C '+e.message;renderMessages();showToast('\u26A0 '+e.message,'danger');}
+    }
+    setLoading(false); scrollBottom();
+    var eb=document.getElementById('export-btn');if(eb)eb.style.display='flex';
+    return;
+  }
+  // No attachment — call original
+  await _baseCoreSend.apply(this, arguments);
+  var eb=document.getElementById('export-btn');
+  if(eb&&messages&&messages.length>2)eb.style.display='flex';
+};
+
+/* ══ PDF EXPORT ══════════════════════════════════════════════════ */
+async function exportToPDF() {
+  if (!messages || messages.length === 0) { showToast('No content to export', 'amber'); return; }
+  showToast('\u23F3 Preparing PDF\u2026', 'teal');
+  if (!window.jsPDF) {
+    var sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    document.head.appendChild(sc);
+    await new Promise(function(res){ sc.onload=res; });
+  }
+  var doc = new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  var pageW=210, pageH=297, margin=15, usableW=pageW-margin*2, y=margin;
+  function addPage(){doc.addPage();y=margin;}
+  function checkPage(n){if(y+n>pageH-margin)addPage();}
+  // Header
+  doc.setFillColor(5,15,26); doc.rect(0,0,pageW,22,'F');
+  doc.setTextColor(20,184,166); doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text('SmartMedicine',margin,13);
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(100,150,200);
+  var topic=(activeTopic&&activeTopic.title)?activeTopic.title:'Session';
+  doc.text(topic+' \u00B7 Dr. Agbesi \u00B7 '+new Date().toLocaleDateString(),margin,20);
+  y=32;
+  messages.forEach(function(msg){
+    if(!msg.content||msg.content.length<5)return;
+    var clean=msg.content.replace(/---FLASHCARDS---[\s\S]*?---END-FLASHCARDS---/g,'').replace(/```[a-z]*/g,'').replace(/```/g,'').trim();
+    if(msg.role==='user'){
+      checkPage(14); doc.setFillColor(0,60,40); doc.setTextColor(180,240,200);
+      doc.setFontSize(9); doc.setFont('helvetica','bold');
+      var ul=doc.splitTextToSize('Dr. Agbesi: '+clean,usableW-4);
+      var bH=ul.length*4.5+5; checkPage(bH+4);
+      doc.roundedRect(margin+20,y,usableW-20,bH,2,2,'F'); doc.text(ul,margin+22,y+5); y+=bH+4;
+    } else {
+      doc.setTextColor(30,30,30); doc.setFontSize(9); doc.setFont('helvetica','normal');
+      var pl=doc.splitTextToSize(clean,usableW); var pH=pl.length*4.5;
+      checkPage(pH+4); doc.text(pl,margin,y); y+=pH+6;
+      // ECG canvases
+      document.querySelectorAll('.ecg-wrap canvas').forEach(function(cv){
+        try{var img=cv.toDataURL('image/png');var cW=160,cH=Math.round(cv.height/cv.width*cW);checkPage(cH+8);doc.setFillColor(4,14,8);doc.rect(margin,y,cW,cH,'F');doc.addImage(img,'PNG',margin,y,cW,cH);y+=cH+8;}catch(e){}
+      });
+      doc.setDrawColor(200,230,220); doc.line(margin,y,pageW-margin,y); y+=4;
+    }
+  });
+  if(flashcards&&flashcards.length>0){
+    addPage();
+    doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(20,120,100);
+    doc.text('Flashcards \u2014 '+flashcards.length+' cards',margin,y);y+=10;
+    flashcards.forEach(function(fc){
+      checkPage(20);
+      doc.setFillColor(230,245,255);doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(0,60,120);
+      var ql=doc.splitTextToSize('Q: '+fc.front,usableW-4);var al=doc.splitTextToSize('A: '+fc.back,usableW-4);
+      var cH=(ql.length+al.length)*4+8;doc.roundedRect(margin,y,usableW,cH,2,2,'F');
+      doc.text(ql,margin+3,y+4);doc.setFillColor(220,240,230);doc.setTextColor(0,80,40);
+      doc.rect(margin,y+ql.length*4+4,usableW,al.length*4+4,'F');doc.text(al,margin+3,y+ql.length*4+8);y+=cH+4;
+    });
+  }
+  var pc=doc.internal.getNumberOfPages();
+  for(var p=1;p<=pc;p++){doc.setPage(p);doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(150,150,150);doc.text('SmartMedicine \u00B7 Page '+p+' of '+pc,margin,pageH-8);}
+  var fn=((activeTopic?activeTopic.title:'SmartMedicine').replace(/[^a-z0-9]/gi,'_').slice(0,40))+'_'+new Date().toISOString().slice(0,10)+'.pdf';
+  doc.save(fn);
+  showToast('\u2705 PDF saved: '+fn,'teal');
+}
+
+
 /* ══ LIGHT / DARK THEME TOGGLE ═══════════════════════════════════ */
 var isLightMode = false;
 function toggleTheme() {
