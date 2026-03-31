@@ -173,7 +173,7 @@ COLOUR ENCODING FOR MERMAID DIAGRAMS
 🟡 fill:#92400E,stroke:#B45309 = COMPENSATION / warning / borderline
 ⚫ fill:#374151,stroke:#4B5563 = BYPASSED / inactive / blocked
 🟣 fill:#5B21B6,stroke:#4C1D95 = MOLECULAR / cellular / receptor level
-🔵 fill:#0F7173,stroke:#065F46 = CLINICAL BRIDGE / bedside connection``;
+🔵 fill:#0F7173,stroke:#065F46 = CLINICAL BRIDGE / bedside connection`;
 
 // ══ CHAT ENDPOINT (streaming) ══════════════════════════════
 app.post('/api/chat', async (req, res) => {
