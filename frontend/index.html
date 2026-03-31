@@ -675,6 +675,93 @@ body {
   #bottom-nav { display: none !important; }
   #tab-row { display: flex !important; }
 }
+
+/* ══ FEATURE CSS ════════════════════════════════════════════════════ */
+
+/* Layer stepper */
+.layer-stepper {
+  display:flex;align-items:center;gap:0;padding:7px 14px;
+  background:rgba(0,0,0,0.22);border-bottom:1px solid var(--sm-border);
+  overflow-x:auto;flex-shrink:0;min-height:44px;
+}
+.layer-step { display:flex;align-items:center;gap:0; }
+.layer-dot {
+  width:26px;height:26px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:0.62rem;font-weight:800;line-height:1;
+  border:2px solid var(--sm-border);color:var(--sm-text3);
+  background:var(--sm-bg);transition:all 0.3s;flex-shrink:0;
+  cursor:pointer;text-align:center;
+}
+.layer-dot.active {
+  border-color:var(--sm-teal);color:var(--sm-teal);
+  background:rgba(20,184,166,0.12);box-shadow:0 0 10px rgba(20,184,166,0.3);
+}
+.layer-dot.done { border-color:rgba(20,184,166,0.35);color:rgba(20,184,166,0.55);background:rgba(20,184,166,0.05); }
+.layer-line { width:18px;height:2px;background:var(--sm-border);flex-shrink:0; }
+.layer-line.done { background:rgba(20,184,166,0.4); }
+
+/* Clinical pearl cards */
+.pearl-card {
+  background:linear-gradient(135deg,rgba(245,158,11,0.08),rgba(245,158,11,0.04));
+  border:1px solid rgba(245,158,11,0.22);border-left:3px solid var(--sm-amber);
+  border-radius:10px;padding:10px 14px;margin-bottom:7px;
+  animation:msgin 0.25s ease;line-height:1.6;
+}
+.pearl-star { color:var(--sm-amber);font-size:1rem;margin-right:6px; }
+
+/* FAB button */
+.fab {
+  position:fixed;bottom:76px;right:16px;z-index:500;
+  width:46px;height:46px;border-radius:50%;
+  background:linear-gradient(135deg,var(--sm-teal),#06d6a0);
+  border:none;color:white;font-size:1.2rem;
+  box-shadow:0 4px 18px rgba(20,184,166,0.45);
+  cursor:pointer;transition:all 0.2s;
+  display:none;align-items:center;justify-content:center;
+}
+.fab:hover { transform:scale(1.1);box-shadow:0 6px 26px rgba(20,184,166,0.55); }
+
+/* Mastery bars */
+.mastery-bar-wrap { margin-bottom:9px; }
+.mastery-bar-label { display:flex;justify-content:space-between;align-items:center;font-size:.72rem;margin-bottom:3px; }
+.mastery-bar { height:6px;background:var(--sm-border);border-radius:3px;overflow:hidden; }
+.mastery-bar-fill { height:100%;border-radius:3px;transition:width 0.6s ease; }
+
+/* USMLE exam options */
+.exam-option {
+  background:rgba(255,255,255,0.03);border:1px solid var(--sm-border);
+  border-radius:10px;padding:11px 14px;margin-bottom:7px;
+  cursor:pointer;transition:all 0.18s;font-size:0.88rem;
+  color:var(--sm-text1);text-align:left;width:100%;
+  font-family:var(--sm-sans);display:flex;align-items:flex-start;gap:0;
+}
+.exam-option:hover { background:rgba(20,184,166,0.06);border-color:rgba(20,184,166,0.3); }
+.exam-option.correct { background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.4);color:#6ee7b7; }
+.exam-option.wrong   { background:rgba(244,63,94,0.12);border-color:rgba(244,63,94,0.3);color:#fda4af; }
+.exam-option:disabled { cursor:default; }
+.exam-letter {
+  font-weight:800;color:var(--sm-teal);flex-shrink:0;
+  font-size:0.88rem;min-width:24px;
+}
+
+/* Spaced rep due badge */
+.due-badge {
+  display:inline-flex;align-items:center;gap:4px;
+  background:rgba(244,63,94,0.15);border:1px solid rgba(244,63,94,0.3);
+  border-radius:20px;padding:3px 10px;font-size:0.7rem;
+  font-weight:700;color:var(--sm-danger);
+}
+
+/* Global search */
+.search-result {
+  background:rgba(255,255,255,0.02);border:1px solid var(--sm-border);
+  border-radius:10px;padding:10px 14px;margin-bottom:6px;
+  cursor:pointer;transition:all 0.15s;
+}
+.search-result:hover { background:rgba(20,184,166,0.05);border-color:rgba(20,184,166,0.25); }
+.search-highlight { background:rgba(245,158,11,0.25);color:var(--sm-amber);border-radius:2px;padding:0 2px; }
+
 </style>
 </head>
 <body>
@@ -1615,6 +1702,11 @@ async function sendMessage() {
           if(d.type==='error'){showToast('⚠ AI error: '+d.error,'danger');}
           if(d.type==='done'){
             try{flashcards=await safeFetch(`${API}/flashcards/topic/${activeId}`);renderFlashcards();updateTabLabels();await loadTopics();}catch(e){}
+            // Extract pearls ONCE when full response is complete
+            var finalMsg = messages[messages.length-1];
+            if(finalMsg && finalMsg.role==='assistant' && finalMsg.content){
+              extractAndSavePearls(finalMsg.content, activeId, activeTopic ? activeTopic.specialty : 'General');
+            }
           }
         }catch{}
       }
@@ -1863,7 +1955,11 @@ function extractAndSavePearls(text, topicId, specialty) {
     if (line.indexOf('\u2605') > -1) {
       var content = line.replace(/\u2605\s*(PEARL[:\s]+)?/i, '').trim().replace(/\*\*/g,'');
       if (content.length > 20 && content.length < 400) {
-        pearls.push({ id: Date.now() + Math.random(), content: content, specialty: specialty || 'General', topicId: topicId });
+        // Dedup — never save same pearl text twice
+        var alreadyExists = pearls.some(function(p) { return p.content === content; });
+        if (!alreadyExists) {
+          pearls.push({ id: Date.now() + Math.random(), content: content, specialty: specialty || 'General', topicId: topicId });
+        }
       }
     }
   }
@@ -2025,7 +2121,16 @@ async function generateExam() {
   document.getElementById('exam-idle').style.display     = 'none';
   document.getElementById('exam-question').style.display = 'none';
   document.getElementById('exam-loading').style.display  = 'block';
-  var prompt = 'Generate a USMLE Step 1/2 style clinical vignette question about ' + (activeTopic.title || 'this topic') + ' (' + (activeTopic.specialty || 'General') + ').\n\nFormat EXACTLY:\nVIGNETTE: [2-4 sentence clinical scenario]\nSTEM: [The question]\nA: [Option A]\nB: [Option B]\nC: [Option C]\nD: [Option D]\nCORRECT: [A, B, C, or D]\nEXPLANATION: [Full mechanism explanation from first principles]';
+  // Build context from last 4 AI responses in this session
+  var sessionContext = messages
+    .filter(function(m) { return m.role === 'assistant' && m.content && m.content.length > 100; })
+    .slice(-4)
+    .map(function(m) { return m.content.slice(0, 600).replace(/---FLASHCARDS---[\s\S]*?---END-FLASHCARDS---/g, '').trim(); })
+    .join('\n\n---\n\n');
+
+  var prompt = 'Based SPECIFICALLY on what Dr. Agbesi just learned in this session about ' + (activeTopic.title || 'this topic') + ' (' + (activeTopic.specialty || 'General') + '), generate a USMLE Step 1/2 style clinical vignette question that tests the exact mechanisms we discussed.\n\n'
+    + (sessionContext ? 'WHAT WAS TAUGHT IN THIS SESSION:\n' + sessionContext + '\n\n' : '')
+    + 'Generate a question that directly tests understanding of these concepts — not a random question about the specialty.\n\nFormat EXACTLY like this:\nVIGNETTE: [2-4 sentence clinical scenario with specific patient details, labs, vitals, exam findings]\nSTEM: [The specific question — mechanism, diagnosis, or management]\nA: [Option A text]\nB: [Option B text]\nC: [Option C text]\nD: [Option D text]\nE: [Option E text]\nCORRECT: [A, B, C, D, or E]\nEXPLANATION: [Full first-principles mechanism explanation — why correct answer is right and why each wrong answer is wrong]';
   try {
     var res = await fetch(API + '/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages:[{role:'user',content:prompt}], topic_id:null }) });
     var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', full = '';
@@ -2053,7 +2158,7 @@ function renderExamQuestion(text) {
   }
   var vignette = getField('VIGNETTE'), stem = getField('STEM'), explanation = getField('EXPLANATION');
   var correct  = getField('CORRECT').trim().charAt(0).toUpperCase();
-  var options  = ['A','B','C','D'].map(function(l) { return { letter:l, text:getField(l) }; }).filter(function(o) { return o.text; });
+  var options  = ['A','B','C','D','E'].map(function(l) { return { letter:l, text:getField(l) }; }).filter(function(o) { return o.text; });
   if (!vignette || options.length < 2) { showToast('Could not parse question \u2014 try again', 'amber'); document.getElementById('exam-idle').style.display = 'block'; return; }
   examAnswered = false;
   document.getElementById('exam-vignette').textContent = vignette;
@@ -2069,7 +2174,7 @@ function renderExamQuestion(text) {
     btn.dataset.letter      = o.letter;
     btn.dataset.correct     = correct;
     btn.dataset.explanation = explanation;
-    btn.innerHTML = '<span class="exam-letter">' + esc(o.letter) + '</span><span>' + esc(o.text) + '</span>';
+    btn.innerHTML = '<span class="exam-letter">' + esc(o.letter) + '.</span><span style="padding-left:8px">' + esc(o.text) + '</span>';
     btn.onclick = function() { answerExam(o.letter, correct, explanation); };
     optWrap.appendChild(btn);
   });
@@ -2117,9 +2222,10 @@ switchTab = function(tab) {
 var _baseUpdateLastBubble = updateLastBubble;
 updateLastBubble = function() {
   _baseUpdateLastBubble();
+  // Only detect layer during streaming (lightweight text check)
+  // Pearl extraction happens only on 'done' to prevent repetition
   var last = messages[messages.length - 1];
   if (last && last.role === 'assistant' && last.content) {
-    extractAndSavePearls(last.content, activeId, activeTopic ? activeTopic.specialty : 'General');
     detectLayerFromText(last.content);
   }
 };
