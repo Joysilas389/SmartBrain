@@ -3084,7 +3084,8 @@ function simSend() {
 }
 function simRevealDiagnosis() {
   if (!simCase) return;
-  // Build a summary of the sim conversation to inject as context
+  // Build sim transcript for context - but send as ONE user message only
+  // Do NOT push into messages[] permanently to avoid polluting conversation history
   var simSummary = 'CLINICAL SIMULATION TRANSCRIPT:\n';
   simCase.messages.forEach(function(m) {
     if (m.role === 'user') simSummary += 'DR. AGBESI: ' + m.content + '\n';
@@ -3095,29 +3096,39 @@ function simRevealDiagnosis() {
   if (modal) modal.hide();
   setTimeout(function() {
     if (!activeId) {
+      // No active session - create one and inject prompt normally
       newSession(revPrompt);
     } else {
-      // Inject sim context directly into messages array before sending
-      messages.push({ role: 'user', content: revPrompt });
-      messages.push({ role: 'assistant', content: '' });
+      // Send reveal as a standalone call - do NOT push sim transcript into messages[]
+      // This keeps messages[] clean for subsequent chats
+      var revMsg = { role: 'user', content: revPrompt };
+      var revResp = { role: 'assistant', content: '' };
+      messages.push(revMsg);
+      messages.push(revResp);
       renderMessages();
       scrollBottom();
       setLoading(true);
-      var hist = messages.slice(0, -1).filter(function(m) { return m.content && m.content.trim(); }).map(function(m) { return { role: m.role, content: m.content }; });
+      // Only send the reveal message to Anthropic - not the whole history
+      // The sim transcript IS the context, no need to add existing chat history
+      var revHist = [{ role: 'user', content: revPrompt }];
       fetch(API + '/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: hist, topic_id: activeId })
+        body: JSON.stringify({ messages: revHist, topic_id: activeId })
       }).then(function(res) {
         if (!res.ok) throw new Error('Server error ' + res.status);
         var reader = res.body.getReader();
         var dec = new TextDecoder();
         var buf = '';
-        var lastMsg = messages[messages.length - 1];
         function pump() {
           return reader.read().then(function(rv) {
             if (rv.done) {
               setLoading(false);
+              // Fetch updated flashcards after reveal (backend extracts from response)
+              safeFetch(API + '/flashcards/topic/' + activeId).then(function(fcs) {
+                flashcards = fcs; renderFlashcards(); updateTabLabels();
+              }).catch(function(){});
+              loadTopics();
               return;
             }
             buf += dec.decode(rv.value, { stream: true });
@@ -3127,13 +3138,9 @@ function simRevealDiagnosis() {
               try {
                 var d = JSON.parse(line.slice(6));
                 if (d.type === 'delta') {
-                  lastMsg.content += d.text;
+                  revResp.content += d.text;
                   renderMessages();
                   scrollBottom();
-                }
-                if (d.type === 'done') {
-                  setLoading(false);
-                  loadTopics();
                 }
               } catch(e) {}
             });
@@ -3143,7 +3150,7 @@ function simRevealDiagnosis() {
         return pump();
       }).catch(function(e) {
         setLoading(false);
-        messages[messages.length - 1].content = 'Error: ' + e.message;
+        revResp.content = 'Error: ' + e.message;
         renderMessages();
       });
     }
