@@ -236,6 +236,7 @@ app.post('/api/chat', async (req, res) => {
         messages:   messages.filter(m => m.content && m.content.toString().trim().length > 0),
         stream:     true,
         // web_search removed — causes two-round streaming, breaks flashcard extraction
+        // v2
       })
     });
 
