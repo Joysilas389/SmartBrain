@@ -289,16 +289,18 @@ app.post('/api/chat', async (req, res) => {
         let savedCount = 0;
         for (const line of lines) {
           const trimmed = line.trim();
-          if (trimmed.toUpperCase().startsWith('FRONT:')) {
+          // Strip markdown bold markers (**FRONT:** -> FRONT:)
+          const clean = trimmed.replace(/\*\*/g, '').replace(/^#+\s*/, '').trim();
+          if (clean.toUpperCase().startsWith('FRONT:')) {
             if (front && back && front.length > 5 && back.length > 5) {
               fcOps.insert({ topic_id, specialty, front, back: back.trim(), source: 'ai' });
               savedCount++;
             }
-            front = trimmed.slice(6).trim(); back = ''; inBack = false;
-          } else if (trimmed.toUpperCase().startsWith('BACK:')) {
-            back = trimmed.slice(5).trim(); inBack = true;
-          } else if (inBack && trimmed && !trimmed.startsWith('---') && !trimmed.startsWith('FRONT:')) {
-            back += ' ' + trimmed;
+            front = clean.slice(6).trim(); back = ''; inBack = false;
+          } else if (clean.toUpperCase().startsWith('BACK:')) {
+            back = clean.slice(5).trim(); inBack = true;
+          } else if (inBack && clean && !clean.startsWith('---') && !clean.toUpperCase().startsWith('FRONT:')) {
+            back += ' ' + clean;
           }
         }
         if (front && back && front.length > 5 && back.length > 5) {
@@ -319,9 +321,4 @@ app.post('/api/chat', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001; // deploy: 202604011339
-// Keep-alive: ping self every 4 min to prevent Render sleeping
-setInterval(() => {
-  require('http').get('http://localhost:' + PORT + '/api/health', ()=>{}).on('error', ()=>{});
-}, 4 * 60 * 1000);
-
 app.listen(PORT, () => console.log(`🧠 SmartMedicine running on port ${PORT}`));
