@@ -3084,10 +3084,70 @@ function simSend() {
 }
 function simRevealDiagnosis() {
   if (!simCase) return;
-  var revPrompt = 'The clinical encounter is over. Reveal the diagnosis and teach every step from first principles. What did Dr. Agbesi get right, what did he miss, and how to never miss this again.';
-  var m = bootstrap.Modal.getInstance(document.getElementById('featuresModal'));
-  if (m) m.hide();
-  setTimeout(function() { if (!activeId) newSession(revPrompt); else { injectPrompt(revPrompt); sendMessage(); } }, 400);
+  // Build a summary of the sim conversation to inject as context
+  var simSummary = 'CLINICAL SIMULATION TRANSCRIPT:\n';
+  simCase.messages.forEach(function(m) {
+    if (m.role === 'user') simSummary += 'DR. AGBESI: ' + m.content + '\n';
+    else if (m.role === 'assistant') simSummary += 'PATIENT/NURSE: ' + m.content + '\n';
+  });
+  var revPrompt = simSummary + '\n---\nThe clinical encounter above is now complete. Based on this exact case: reveal the diagnosis, teach every step from first principles, explain what Dr. Agbesi got right, what he missed, and how to never miss this diagnosis again.';
+  var modal = bootstrap.Modal.getInstance(document.getElementById('featuresModal'));
+  if (modal) modal.hide();
+  setTimeout(function() {
+    if (!activeId) {
+      newSession(revPrompt);
+    } else {
+      // Inject sim context directly into messages array before sending
+      messages.push({ role: 'user', content: revPrompt });
+      messages.push({ role: 'assistant', content: '' });
+      renderMessages();
+      scrollBottom();
+      setLoading(true);
+      var hist = messages.slice(0, -1).filter(function(m) { return m.content && m.content.trim(); }).map(function(m) { return { role: m.role, content: m.content }; });
+      fetch(API + '/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: hist, topic_id: activeId })
+      }).then(function(res) {
+        if (!res.ok) throw new Error('Server error ' + res.status);
+        var reader = res.body.getReader();
+        var dec = new TextDecoder();
+        var buf = '';
+        var lastMsg = messages[messages.length - 1];
+        function pump() {
+          return reader.read().then(function(rv) {
+            if (rv.done) {
+              setLoading(false);
+              return;
+            }
+            buf += dec.decode(rv.value, { stream: true });
+            var lines = buf.split('\n'); buf = lines.pop() || '';
+            lines.forEach(function(line) {
+              if (!line.startsWith('data: ')) return;
+              try {
+                var d = JSON.parse(line.slice(6));
+                if (d.type === 'delta') {
+                  lastMsg.content += d.text;
+                  renderMessages();
+                  scrollBottom();
+                }
+                if (d.type === 'done') {
+                  setLoading(false);
+                  loadTopics();
+                }
+              } catch(e) {}
+            });
+            return pump();
+          });
+        }
+        return pump();
+      }).catch(function(e) {
+        setLoading(false);
+        messages[messages.length - 1].content = 'Error: ' + e.message;
+        renderMessages();
+      });
+    }
+  }, 500);
 }
 
 /* ══ DIFFERENTIAL DIAGNOSIS ENGINE ══════════════════════════════ */
