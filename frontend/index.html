@@ -737,8 +737,8 @@ body.light-mode #spec-select option { background:#fff!important; color:#0f2040!i
 .fc-flip { cursor: pointer; }
 .fc-inner { position: relative; width: 100%; }
 .fc-face { border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; }
-.fc-front { background: linear-gradient(135deg, rgba(0,52,130,0.35), rgba(0,35,100,0.25)); border: 1px solid rgba(0,130,200,0.22); }
-.fc-back { background: linear-gradient(135deg, rgba(0,90,65,0.35), rgba(0,60,50,0.25)); border: 1px solid rgba(0,180,130,0.22); display: none; }
+.fc-front { display: flex; flex-direction: column; background: linear-gradient(135deg, rgba(0,52,130,0.35), rgba(0,35,100,0.25)); border: 1px solid rgba(0,130,200,0.22); }
+.fc-back { display: none; flex-direction: column; background: linear-gradient(135deg, rgba(0,90,65,0.35), rgba(0,60,50,0.25)); border: 1px solid rgba(0,180,130,0.22); }
 .fc-flip.flipped .fc-front { display: none; }
 .fc-flip.flipped .fc-back { display: flex; }
 .fc-lbl { font-size: 0.57rem; font-weight: 700; letter-spacing: 0.12em; margin-bottom: 4px; font-family: var(--sm-mono); }
