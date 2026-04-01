@@ -1795,6 +1795,8 @@ function init() {
 
   document.addEventListener('mousedown', e => { if (!e.target.closest('#hl-menu')) closeHlMenu(); });
   setupHighlight();
+  // Ping backend immediately to wake Render from sleep
+  fetch(API + '/topics').catch(function(){});
   loadTopics();
 }
 
@@ -1838,14 +1840,22 @@ function buildSbShared() {
 
   document.getElementById('sb-content').innerHTML = html;
 
-  // Clone to mobile offcanvas (without brand - brand is in offcanvas-header)
-  document.getElementById('mob-sb-content').innerHTML = html;
+  // Clone to mobile offcanvas — replace IDs to avoid duplicates
+  var mobHtml = html
+    .replace('id="sb-filter-body"', 'id="mob-sb-filter-body"')
+    .replace('data-bs-target="#sb-filter-body"', 'data-bs-target="#mob-sb-filter-body"')
+    .replace('id="filter-pills"', 'id="mob-filter-pills"')
+    .replace('id="topic-search"', 'id="mob-topic-search"')
+    .replace('oninput="renderTopics()"', 'oninput="renderTopics()"')
+    .replace('id="topic-list-wrap"', 'id="mob-topic-list-wrap"')
+    .replace('id="topic-list"', 'id="mob-topic-list"');
+  document.getElementById('mob-sb-content').innerHTML = mobHtml;
 
   buildFilterPills();
 }
 
 function buildFilterPills() {
-  document.querySelectorAll('#filter-pills').forEach(wrap => {
+  document.querySelectorAll('#filter-pills, #mob-filter-pills').forEach(wrap => {
     for (const [grp, subs] of Object.entries(SUBJECTS)) {
       const lbl = document.createElement('span');
       lbl.style.cssText = 'font-size:.57rem;color:var(--sm-text3);letter-spacing:.1em;text-transform:uppercase;width:100%;padding-top:4px;font-weight:600';
@@ -1939,6 +1949,7 @@ async function loadTopics() {
     try {
       var fresh = await safeFetch(`${API}/topics`);
       topics = fresh;
+      window._topicsLoaded = true;
       try { localStorage.setItem('sm_topics_cache', JSON.stringify(topics)); } catch(e) {}
       renderTopics(); updateStats(); updateLandingRecent();
       return;
@@ -2023,7 +2034,7 @@ function renderHistoryList(list) {
 }
 
 function renderTopics() {
-  const lists = document.querySelectorAll('#topic-list');
+  const lists = document.querySelectorAll('#topic-list, #mob-topic-list');
   const search = (document.getElementById('topic-search')?.value || '').toLowerCase();
   const filtered = topics.filter(t =>
     (activeFilter==='All' || t.specialty===activeFilter) &&
@@ -2032,7 +2043,10 @@ function renderTopics() {
   lists.forEach(list => {
     list.innerHTML = '';
     if (filtered.length === 0) {
-      list.innerHTML = `<div class="text-center py-4" style="font-size:.75rem;color:var(--sm-text3)">${topics.length===0?'Start your first session →':'No topics found'}</div>`;
+      var emptyMsg = topics.length === 0
+        ? (window._topicsLoaded ? 'No sessions yet — tap + New Session' : '<div class="typing-dots justify-content-center mb-2"><span></span><span></span><span></span></div>Loading…')
+        : 'No topics found';
+      list.innerHTML = '<div class="text-center py-4" style="font-size:.75rem;color:var(--sm-text3)">' + emptyMsg + '</div>';
       return;
     }
     filtered.forEach(t => {
