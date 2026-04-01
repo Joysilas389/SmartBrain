@@ -236,7 +236,6 @@ app.post('/api/chat', async (req, res) => {
         messages:   messages.filter(m => m.content && m.content.toString().trim().length > 0),
         stream:     true,
         // web_search removed — causes two-round streaming, breaks flashcard extraction
-        // v2
       })
     });
 
@@ -320,4 +319,9 @@ app.post('/api/chat', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001; // deploy: 202604011339
+// Keep-alive: ping self every 4 min to prevent Render sleeping
+setInterval(() => {
+  require('http').get('http://localhost:' + PORT + '/api/health', ()=>{}).on('error', ()=>{});
+}, 4 * 60 * 1000);
+
 app.listen(PORT, () => console.log(`🧠 SmartMedicine running on port ${PORT}`));
