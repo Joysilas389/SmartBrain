@@ -49,93 +49,78 @@
   --bs-font-monospace:      'JetBrains Mono', monospace;
 }
 /* ── LIGHT MODE ── */
-body.light-mode {
-  --sm-bg:       #f0f4f8;
-  --sm-surface:  #ffffff;
-  --sm-panel:    #e8eef5;
-  --sm-raise:    #dce8f5;
-  --sm-border:   rgba(20,184,166,0.25);
-  --sm-text1:    #0f2040;
-  --sm-text2:    #2a4a70;
-  --sm-text3:    #5a7a9a;
-  --bs-body-bg:       #f0f4f8;
-  --bs-body-color:    #0f2040;
-  --bs-secondary-bg:  #ffffff;
-  --bs-tertiary-bg:   #e8eef5;
-  --bs-border-color:  rgba(20,184,166,0.25);
-}
-body.light-mode { background: var(--sm-bg) !important; color: var(--sm-text1); }
-body.light-mode #sidebar,
-body.light-mode .offcanvas { background: var(--sm-surface) !important; }
-body.light-mode .bubble-ai { background: #ffffff !important; border-color: rgba(20,184,166,0.2) !important; }
-body.light-mode .bubble-user { background: rgba(20,184,166,0.08) !important; }
-body.light-mode .prose { color: var(--sm-text1); }
-body.light-mode .prose h1 { color: #b45309; }
-body.light-mode .prose h2 { color: #0f766e; }
-body.light-mode .prose h3 { color: #047857; }
-body.light-mode .prose strong { color: #b45309; }
-body.light-mode .prose li { color: var(--sm-text2); }
-body.light-mode .sm-topbar, body.light-mode #topbar { background: var(--sm-surface) !important; }
-body.light-mode .modal-content { background: var(--sm-surface) !important; color: var(--sm-text1); }
-body.light-mode .topic-item:hover { background: rgba(20,184,166,0.06) !important; }
-body.light-mode .topic-item.active { background: rgba(20,184,166,0.12) !important; }
-body.light-mode #input-zone { background: var(--sm-surface) !important; }
-body.light-mode .input-shell { background: #f8fbff !important; border-color: rgba(20,184,166,0.3) !important; }
-body.light-mode #msg-input { color: var(--sm-text1) !important; }
-body.light-mode #msg-input::placeholder { color: var(--sm-text3) !important; }
-body.light-mode .pearl-card { background: rgba(245,158,11,0.06) !important; }
-body.light-mode .mermaid-wrap { background: #f8fcff !important; }
-body.light-mode .ecg-wrap { background: #040e08 !important; } /* keep ECG dark always */
-body.light-mode #bg-canvas { opacity: 0.06 !important; }
-body.light-mode .bottom-nav { background: var(--sm-surface) !important; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ /* keep ECG dark always */
+
+
 
 /* ── Light mode: ALL text elements ── */
-body.light-mode .topic-title { color: var(--sm-text1) !important; }
-body.light-mode .topic-item:hover .topic-title { color: #0f2040 !important; }
-body.light-mode .brand-name { color: #0f2040 !important; }
-body.light-mode .brand-tag { color: var(--sm-text3) !important; }
-body.light-mode .tab-btn { color: var(--sm-text2) !important; }
-body.light-mode .tab-btn.active { color: var(--sm-teal) !important; }
-body.light-mode .bnav-btn { color: var(--sm-text2) !important; }
-body.light-mode .bnav-btn.active, body.light-mode .bnav-btn:hover { color: var(--sm-teal) !important; }
-body.light-mode .fpill { color: var(--sm-text2) !important; border-color: rgba(20,184,166,0.3) !important; }
-body.light-mode .fpill.active { color: var(--sm-teal) !important; }
-body.light-mode .btn-ham { color: var(--sm-text2) !important; background: #e8eef5 !important; border-color: rgba(20,184,166,0.25) !important; }
-body.light-mode .btn-ham:hover { color: var(--sm-teal) !important; }
-body.light-mode .btn-theme { color: var(--sm-text2) !important; background: #e8eef5 !important; }
-body.light-mode #topbar-title { color: #0f2040 !important; }
-body.light-mode #topbar { border-bottom-color: rgba(20,184,166,0.2) !important; }
-body.light-mode .sb-search-input { color: var(--sm-text1) !important; background: #f0f6ff !important; }
-body.light-mode .sb-search-input::placeholder { color: var(--sm-text3) !important; }
-body.light-mode .sb-accordion .accordion-button { color: var(--sm-text2) !important; background: transparent !important; }
-body.light-mode .accordion-item { background: transparent !important; }
-body.light-mode .accordion-body { background: transparent !important; }
-body.light-mode select, body.light-mode option { color: var(--sm-text1) !important; background: var(--sm-surface) !important; }
-body.light-mode #qp-select { color: var(--sm-text2) !important; }
-body.light-mode .fc-txt { color: #0f2040 !important; }
-body.light-mode .fc-lbl { color: rgba(0,80,160,0.6) !important; }
-body.light-mode .fc-front { background: rgba(0,80,180,0.08) !important; border-color: rgba(0,80,180,0.2) !important; }
-body.light-mode .fc-back { background: rgba(0,120,80,0.08) !important; border-color: rgba(0,120,80,0.2) !important; }
-body.light-mode .study-txt { color: #0f2040 !important; }
-body.light-mode .pearl-card { color: #0f2040 !important; }
-body.light-mode .diff-card { background: #f0f6ff !important; color: var(--sm-text1) !important; }
-body.light-mode .challenge-box { background: rgba(0,100,160,0.06) !important; }
-body.light-mode .patient-bubble { background: rgba(100,80,200,0.06) !important; color: var(--sm-text1) !important; }
-body.light-mode .anchor-card { background: rgba(100,80,200,0.05) !important; color: var(--sm-text1) !important; }
-body.light-mode .heat-cell { color: inherit !important; }
-body.light-mode .input-meta { color: var(--sm-text3) !important; }
-body.light-mode #char-count { color: var(--sm-text3) !important; }
-body.light-mode .layer-stepper { background: rgba(0,0,0,0.04) !important; }
-body.light-mode .layer-dot { background: #e8eef5 !important; color: var(--sm-text3) !important; border-color: rgba(20,184,166,0.3) !important; }
-body.light-mode .layer-dot.active { background: rgba(20,184,166,0.15) !important; color: var(--sm-teal) !important; }
-body.light-mode .modal-content { color: var(--sm-text1) !important; }
-body.light-mode .modal-title { color: #0f2040 !important; }
-body.light-mode .sb-footer { color: var(--sm-text3) !important; background: var(--sm-surface) !important; }
-body.light-mode .btn-new-session { background: rgba(20,184,166,0.08) !important; }
-body.light-mode .typing-dots span { background: var(--sm-teal) !important; }
-body.light-mode .qp-btn { color: var(--sm-text2) !important; border-color: rgba(20,184,166,0.3) !important; }
-body.light-mode .search-result { background: #f0f6ff !important; color: var(--sm-text1) !important; }
-body.light-mode .con-card { background: rgba(100,80,200,0.05) !important; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* Theme toggle button */
 .btn-theme {
   width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
@@ -341,8 +326,8 @@ body {
 }
 #spec-select option { background:#0b1830 !important; color:var(--sm-text1) !important; }
 #spec-select optgroup { background:#0b1830 !important; color:var(--sm-teal) !important; font-weight:700; }
-body.light-mode #spec-select { background:rgba(20,184,166,0.08)!important; color:var(--sm-teal)!important; }
-body.light-mode #spec-select option { background:#fff!important; color:#0f2040!important; }
+
+
 #spec-select:focus { box-shadow: 0 0 0 0.2rem rgba(20,184,166,0.18); border-color: var(--sm-teal); }
 
 /* Desktop tab row */
@@ -735,12 +720,12 @@ body.light-mode #spec-select option { background:#fff!important; color:#0f2040!i
 
 /* Flashcard flip */
 .fc-flip { cursor: pointer; }
-.fc-inner { position: relative; width: 100%; }
-.fc-face { border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; }
+.fc-inner { width: 100%; }
+.fc-face { border-radius: 10px; padding: 12px 14px; }
 .fc-front { display: flex; flex-direction: column; background: linear-gradient(135deg, rgba(0,52,130,0.35), rgba(0,35,100,0.25)); border: 1px solid rgba(0,130,200,0.22); }
-.fc-back { display: none; flex-direction: column; background: linear-gradient(135deg, rgba(0,90,65,0.35), rgba(0,60,50,0.25)); border: 1px solid rgba(0,180,130,0.22); }
+.fc-back  { display: none;  flex-direction: column; background: linear-gradient(135deg, rgba(0,90,65,0.35), rgba(0,60,50,0.25));  border: 1px solid rgba(0,180,130,0.22); }
 .fc-flip.flipped .fc-front { display: none; }
-.fc-flip.flipped .fc-back { display: flex; }
+.fc-flip.flipped .fc-back  { display: flex; }
 .fc-lbl { font-size: 0.57rem; font-weight: 700; letter-spacing: 0.12em; margin-bottom: 4px; font-family: var(--sm-mono); }
 .fc-front .fc-lbl { color: rgba(100,180,255,0.6); }
 .fc-back .fc-lbl { color: rgba(0,200,150,0.6); }
@@ -1036,16 +1021,14 @@ body.light-mode #spec-select option { background:#fff!important; color:#0f2040!i
 
       <span id="spec-badge" class="badge rounded-pill sp-General flex-shrink-0" style="font-size:.58rem;cursor:pointer" onclick="showSpecPicker()" title="Tap to change specialty"></span>
 
-      <!-- Search, Mastery, Theme -->
+      <!-- History, Search, Mastery, Theme -->
       <button class="btn-ham" data-bs-toggle="modal" data-bs-target="#searchModal" title="Search all sessions" style="flex-shrink:0">
         <i class="bi bi-search" style="font-size:.85rem"></i>
       </button>
       <button class="btn-ham" data-bs-toggle="modal" data-bs-target="#masteryModal" onclick="renderMastery()" title="Mastery dashboard" style="flex-shrink:0">
         <i class="bi bi-graph-up-arrow" style="font-size:.85rem"></i>
       </button>
-      <button class="btn-theme" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">
-        <i class="bi bi-sun-fill" id="theme-icon"></i>
-      </button>
+      
 
       <!-- Desktop tabs -->
       <div id="tab-row">
@@ -1791,7 +1774,6 @@ function buildSbShared() {
 
   document.getElementById('sb-content').innerHTML = html;
 
-  // Clone to mobile offcanvas (without brand - brand is in offcanvas-header)
   document.getElementById('mob-sb-content').innerHTML = html;
 
   buildFilterPills();
@@ -1909,29 +1891,31 @@ async function loadTopics() {
 }
 
 function updateLandingRecent() {
-  const recent = document.getElementById('land-recent');
-  const list   = document.getElementById('land-recent-list');
+  var recent = document.getElementById('land-recent');
+  var list   = document.getElementById('land-recent-list');
   if (!recent || !list) return;
   if (topics.length === 0) { recent.style.display = 'none'; return; }
   recent.style.display = 'block';
   list.innerHTML = '';
-  topics.slice(0, 4).forEach(t => {
-    const sc  = 'sp-' + t.specialty.replace(/ /g,'_');
-    const btn = document.createElement('button');
+  var show = topics.slice(0, 4);
+  show.forEach(function(t) {
+    var sc = 'sp-' + t.specialty.replace(/ /g,'_');
+    var btn = document.createElement('button');
     btn.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid var(--sm-border);border-radius:12px;padding:10px 14px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-family:var(--sm-sans)';
-    btn.innerHTML = '<div style="flex:1;min-width:0"><div style="font-size:.85rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(t.title) + '</div><div style="display:flex;align-items:center;gap:6px;margin-top:3px"><span class="badge rounded-pill ' + sc + '" style="font-size:.56rem">' + t.specialty + '</span>' + (t.message_count>0?'<span style="font-size:.65rem;color:var(--sm-text3)"><i class="bi bi-chat-text"></i> ' + t.message_count + ' messages</span>':'') + (t.flashcard_count>0?'<span style="font-size:.65rem;color:var(--sm-amber)"><i class="bi bi-collection"></i> ' + t.flashcard_count + ' cards</span>':'') + '</div></div><i class="bi bi-arrow-right-circle" style="color:var(--sm-teal);font-size:1.1rem;flex-shrink:0"></i>';
-    btn.onmouseover = () => { btn.style.background='rgba(20,184,166,0.07)'; btn.style.borderColor='rgba(20,184,166,0.3)'; };
-    btn.onmouseout  = () => { btn.style.background='rgba(255,255,255,0.03)'; btn.style.borderColor='var(--sm-border)'; };
-    btn.onclick = () => selectTopic(t.id);
+    btn.innerHTML = '<div style="flex:1;min-width:0"><div style="font-size:.85rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(t.title) + '</div><div style="display:flex;align-items:center;gap:6px;margin-top:3px"><span class="badge rounded-pill ' + sc + '" style="font-size:.56rem">' + t.specialty + '</span>' + (t.message_count > 0 ? '<span style="font-size:.65rem;color:var(--sm-text3)"><i class="bi bi-chat-text"></i> ' + t.message_count + '</span>' : '') + (t.flashcard_count > 0 ? '<span style="font-size:.65rem;color:var(--sm-amber)"><i class="bi bi-collection"></i> ' + t.flashcard_count + ' cards</span>' : '') + '</div></div><i class="bi bi-arrow-right-circle" style="color:var(--sm-teal);font-size:1.1rem;flex-shrink:0"></i>';
+    btn.onmouseover = function() { btn.style.background='rgba(20,184,166,0.07)'; btn.style.borderColor='rgba(20,184,166,0.3)'; };
+    btn.onmouseout  = function() { btn.style.background='rgba(255,255,255,0.03)'; btn.style.borderColor='var(--sm-border)'; };
+    btn.onclick = function() { selectTopic(t.id); };
     list.appendChild(btn);
   });
   if (topics.length > 4) {
-    const more = document.createElement('div');
+    var more = document.createElement('div');
     more.style.cssText = 'text-align:center;font-size:.72rem;color:var(--sm-text3);padding-top:4px';
     more.textContent = '+ ' + (topics.length - 4) + ' more topics in sidebar';
     list.appendChild(more);
   }
 }
+
 
 function renderTopics() {
   const lists = document.querySelectorAll('#topic-list');
@@ -1944,7 +1928,7 @@ function renderTopics() {
     list.innerHTML = '';
     if (filtered.length === 0) {
       var emptyMsg = topics.length === 0
-        ? 'Start your first session →'
+        ? (window._topicsLoaded ? 'No sessions yet — tap + New Session' : '<div class="typing-dots justify-content-center mb-2"><span></span><span></span><span></span></div>Loading…')
         : 'No topics found';
       list.innerHTML = '<div class="text-center py-4" style="font-size:.75rem;color:var(--sm-text3)">' + emptyMsg + '</div>';
       return;
@@ -2887,29 +2871,6 @@ async function exportToPDF() {
 
 /* ══ LIGHT / DARK THEME TOGGLE ═══════════════════════════════════ */
 var isLightMode = false;
-function toggleTheme() {
-  isLightMode = !isLightMode;
-  document.body.classList.toggle('light-mode', isLightMode);
-  var icon = document.getElementById('theme-icon');
-  if (icon) icon.className = isLightMode ? 'bi bi-moon-fill' : 'bi bi-sun-fill';
-  try { localStorage.setItem('sm_theme', isLightMode ? 'light' : 'dark'); } catch(e) {}
-}
-function loadTheme() {
-  try {
-    var saved = localStorage.getItem('sm_theme');
-    if (saved === 'light') {
-      isLightMode = true;
-      document.body.classList.add('light-mode');
-      var icon = document.getElementById('theme-icon');
-      if (icon) icon.className = 'bi bi-moon-fill';
-    }
-  } catch(e) {}
-}
-
-/* ══ VOICE INPUT ══════════════════════════════════════════════════ */
-/* ══ VOICE INPUT — Chrome Android compatible ══════════════════════ */
-var voiceActive = false;
-var voiceRecog  = null;
 
 function _voiceSetUI(active) {
   var btn = document.getElementById('voice-btn');
@@ -3442,7 +3403,6 @@ sendMessage = async function() {
 var _origInit = init;
 init = function() {
   _origInit();
-  loadTheme();
   initVoice();
   loadAnchors();
   loadPearls();
