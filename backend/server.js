@@ -225,114 +225,57 @@ app.post('/api/chat', async (req, res) => {
   res.write(`data: ${JSON.stringify({ type: 'meta', msg_id: assistantMsgId })}\n\n`);
 
   try {
-    // Stream handler that supports web_search tool use.
-    // Anthropic may do multiple rounds: text -> tool_use -> tool_result -> text
-    // We keep the conversation going until stop_reason === 'end_turn'.
-    let fullText = '';
-    let currentMessages = [...messages];
-    let continueLoop = true;
-
-    while (continueLoop) {
-      const apiBody = {
+    // web_search_20250305 is a server-side built-in tool.
+    // Anthropic handles the search internally — we just stream normally.
+    // All text (including search-informed content) arrives as text_delta events.
+    const apiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type':      'application/json',
+        'x-api-key':         process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
         model:      'claude-sonnet-4-20250514',
         max_tokens: 16000,
         system:     SYSTEM_PROMPT,
-        messages:   currentMessages,
+        messages,
         stream:     true,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }]
-      };
+      })
+    });
 
-      const roundRes = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type':      'application/json',
-          'x-api-key':         process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify(apiBody)
-      });
+    if (!apiRes.ok) {
+      const err = await apiRes.text();
+      res.write(`data: ${JSON.stringify({ type: 'error', error: err })}\n\n`);
+      res.end();
+      return;
+    }
 
-      if (!roundRes.ok) {
-        const err = await roundRes.text();
-        res.write(`data: ${JSON.stringify({ type: 'error', error: err })}\n\n`);
-        res.end();
-        return;
-      }
+    const reader  = apiRes.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer    = '';
+    let fullText  = '';
 
-      const reader  = roundRes.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer    = '';
-      let stopReason = 'end_turn';
-      let roundText  = '';
-      let toolUseBlocks = [];
-      let currentToolBlock = null;
-      let currentToolInput = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6).trim();
-          if (!data || data === '[DONE]') continue;
-          try {
-            const parsed = JSON.parse(data);
-
-            // Capture text deltas — stream to client
-            if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
-              const chunk = parsed.delta.text;
-              roundText += chunk;
-              fullText  += chunk;
-              res.write(`data: ${JSON.stringify({ type: 'delta', text: chunk })}\n\n`);
-            }
-
-            // Track tool use blocks
-            if (parsed.type === 'content_block_start' && parsed.content_block?.type === 'tool_use') {
-              currentToolBlock = { id: parsed.content_block.id, name: parsed.content_block.name };
-              currentToolInput = '';
-            }
-            if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'input_json_delta') {
-              currentToolInput += parsed.delta.partial_json;
-            }
-            if (parsed.type === 'content_block_stop' && currentToolBlock) {
-              try { currentToolBlock.input = JSON.parse(currentToolInput); } catch(e) { currentToolBlock.input = {}; }
-              toolUseBlocks.push(currentToolBlock);
-              currentToolBlock = null; currentToolInput = '';
-            }
-
-            // Capture stop reason
-            if (parsed.type === 'message_delta' && parsed.delta?.stop_reason) {
-              stopReason = parsed.delta.stop_reason;
-            }
-          } catch {}
-        }
-      }
-
-      // If stop_reason is tool_use, add assistant message + tool results and loop
-      if (stopReason === 'tool_use' && toolUseBlocks.length > 0) {
-        // Build assistant message with all content blocks
-        const assistantContent = [];
-        if (roundText) assistantContent.push({ type: 'text', text: roundText });
-        toolUseBlocks.forEach(tb => {
-          assistantContent.push({ type: 'tool_use', id: tb.id, name: tb.name, input: tb.input || {} });
-        });
-        currentMessages.push({ role: 'assistant', content: assistantContent });
-
-        // Add tool results (web_search handles results server-side, we pass empty result)
-        const toolResults = toolUseBlocks.map(tb => ({
-          type: 'tool_result',
-          tool_use_id: tb.id,
-          content: 'Search completed.'
-        }));
-        currentMessages.push({ role: 'user', content: toolResults });
-        // continue loop to get final text response
-      } else {
-        // end_turn — we are done
-        continueLoop = false;
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (!data || data === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
+            const chunk = parsed.delta.text;
+            fullText += chunk;
+            res.write(`data: ${JSON.stringify({ type: 'delta', text: chunk })}\n\n`);
+          }
+        } catch {}
       }
     }
 

@@ -1035,7 +1035,10 @@ body.light-mode #spec-select option { background:#fff!important; color:#0f2040!i
 
       <span id="spec-badge" class="badge rounded-pill sp-General flex-shrink-0" style="font-size:.58rem;cursor:pointer" onclick="showSpecPicker()" title="Tap to change specialty"></span>
 
-      <!-- Search, Mastery, Theme, Voice buttons -->
+      <!-- History, Search, Mastery, Theme -->
+      <button class="btn-ham" onclick="showHistoryModal()" title="Session History" style="flex-shrink:0">
+        <i class="bi bi-clock-history" style="font-size:.85rem"></i>
+      </button>
       <button class="btn-ham" data-bs-toggle="modal" data-bs-target="#searchModal" title="Search all sessions" style="flex-shrink:0">
         <i class="bi bi-search" style="font-size:.85rem"></i>
       </button>
@@ -1607,6 +1610,43 @@ body.light-mode #spec-select option { background:#fff!important; color:#0f2040!i
   </div>
 </div>
 
+
+<!-- ════════ HISTORY MODAL ════════ -->
+<div class="modal fade" id="historyModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:560px">
+    <div class="modal-content">
+      <div class="modal-header py-2 px-3">
+        <h6 class="modal-title mb-0" style="font-family:var(--sm-serif);font-style:italic">
+          <i class="bi bi-clock-history me-2" style="color:var(--sm-teal)"></i>Session History
+        </h6>
+        <button class="btn p-0 ms-auto" data-bs-dismiss="modal" style="color:var(--sm-text3)"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body p-3" style="max-height:70vh;display:flex;flex-direction:column;gap:10px">
+        <!-- Search + filter row -->
+        <div style="display:flex;gap:8px">
+          <div style="flex:1;display:flex;align-items:center;gap:6px;background:rgba(20,184,166,0.04);border:1px solid var(--sm-border);border-radius:10px;padding:6px 12px">
+            <i class="bi bi-search" style="color:var(--sm-text3);font-size:.8rem"></i>
+            <input type="text" id="hist-search" placeholder="Search sessions…"
+              style="background:transparent;border:none;outline:none;color:var(--sm-text1);font-size:.82rem;width:100%;font-family:var(--sm-sans)"
+              oninput="renderHistoryModal()"/>
+          </div>
+          <select id="hist-specialty" onchange="renderHistoryModal()"
+            style="background:var(--sm-panel);border:1px solid var(--sm-border);border-radius:10px;color:var(--sm-text2);font-size:.75rem;padding:6px 10px;font-family:var(--sm-sans);cursor:pointer">
+            <option value="">All</option>
+          </select>
+        </div>
+        <!-- Session list -->
+        <div id="hist-list" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px"></div>
+        <div style="font-size:.65rem;color:var(--sm-text3);text-align:center" id="hist-count"></div>
+      </div>
+      <div class="modal-footer py-2 px-3">
+        <button class="modal-btn modal-btn-teal" onclick="newSession();bootstrap.Modal.getInstance(document.getElementById('historyModal')).hide()">
+          <i class="bi bi-plus me-1"></i>New Session
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- Hidden specialty select for JS use only -->
 <select id="spec-select" style="display:none" onchange="updateSpecialty(this.value)"></select>
 
@@ -2502,10 +2542,15 @@ function renderPearls() {
   var empty = document.getElementById('pearl-empty');
   var list  = document.getElementById('pearl-list');
   if (!empty || !list) return;
-  if (pearls.length === 0) { empty.style.display = 'block'; list.innerHTML = ''; return; }
+  // Filter pearls to current topic only if in a session
+  var visiblePearls = pearls;
+  if (activeId) {
+    visiblePearls = pearls.filter(function(p) { return p.topicId === activeId; });
+  }
+  if (visiblePearls.length === 0) { empty.style.display = 'block'; list.innerHTML = ''; return; }
   empty.style.display = 'none';
   var grouped = {};
-  pearls.forEach(function(p) { if (!grouped[p.specialty]) grouped[p.specialty] = []; grouped[p.specialty].push(p); });
+  visiblePearls.forEach(function(p) { if (!grouped[p.specialty]) grouped[p.specialty] = []; grouped[p.specialty].push(p); });
   var html2 = '';
   for (var spec in grouped) {
     var sc = 'sp-' + spec.replace(/ /g, '_');
@@ -3956,6 +4001,102 @@ function pickSpecialty(s) {
   var sel = document.getElementById('spec-select');
   if (sel) sel.value = s;
   updateSpecialty(s);
+}
+
+
+/* ══ HISTORY MODAL ══════════════════════════════════════════════ */
+var historyModalInst = null;
+function showHistoryModal() {
+  if (!historyModalInst) historyModalInst = new bootstrap.Modal(document.getElementById('historyModal'));
+  // Populate specialty filter
+  var sel = document.getElementById('hist-specialty');
+  if (sel) {
+    var specs = [''];
+    topics.forEach(function(t){ if(t.specialty && specs.indexOf(t.specialty)===-1) specs.push(t.specialty); });
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">All</option>';
+    specs.slice(1).sort().forEach(function(s){
+      var o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      if (s === cur) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+  renderHistoryModal();
+  historyModalInst.show();
+  setTimeout(function(){ var si = document.getElementById('hist-search'); if(si){ si.value=''; si.focus(); }}, 400);
+}
+
+function renderHistoryModal() {
+  var list  = document.getElementById('hist-list');
+  var count = document.getElementById('hist-count');
+  if (!list) return;
+  var q    = (document.getElementById('hist-search')  || {}).value || '';
+  var spec = (document.getElementById('hist-specialty')|| {}).value || '';
+  var filtered = topics.filter(function(t) {
+    var mQ = !q || t.title.toLowerCase().indexOf(q.toLowerCase()) > -1;
+    var mS = !spec || t.specialty === spec;
+    return mQ && mS;
+  });
+  if (count) count.textContent = filtered.length + ' session' + (filtered.length !== 1 ? 's' : '');
+  list.innerHTML = '';
+  if (filtered.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--sm-text3);font-size:.82rem">No sessions found</div>';
+    return;
+  }
+  filtered.forEach(function(t) {
+    var sc   = 'sp-' + t.specialty.replace(/ /g,'_');
+    var date = t.updated_at ? new Date(t.updated_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+    var row  = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.03);border:1px solid var(--sm-border);border-radius:12px;padding:10px 12px;transition:all .15s';
+    row.innerHTML =
+      '<div style="flex:1;min-width:0;cursor:pointer" onclick="selectTopicFromHistory('' + t.id + '')">' +
+        '<div style="font-size:.85rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(t.title) + '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">' +
+          '<span class="badge rounded-pill ' + sc + '" style="font-size:.54rem">' + t.specialty + '</span>' +
+          (t.message_count > 0 ? '<span style="font-size:.62rem;color:var(--sm-text3)"><i class="bi bi-chat-text"></i> ' + t.message_count + '</span>' : '') +
+          (t.flashcard_count > 0 ? '<span style="font-size:.62rem;color:var(--sm-amber)"><i class="bi bi-collection"></i> ' + t.flashcard_count + '</span>' : '') +
+          (date ? '<span style="font-size:.6rem;color:var(--sm-text3)">' + date + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<button onclick="renameTopicFromHistory('' + t.id + '','' + esc(t.title) + '')" style="background:none;border:1px solid var(--sm-border);border-radius:7px;color:var(--sm-text3);padding:4px 8px;cursor:pointer;font-size:.75rem" title="Rename"><i class="bi bi-pencil"></i></button>' +
+      '<button onclick="deleteTopicFromHistory('' + t.id + '')" style="background:none;border:1px solid rgba(244,63,94,0.25);border-radius:7px;color:var(--sm-danger);padding:4px 8px;cursor:pointer;font-size:.75rem" title="Delete"><i class="bi bi-trash"></i></button>';
+    list.appendChild(row);
+  });
+}
+
+function selectTopicFromHistory(id) {
+  if (historyModalInst) historyModalInst.hide();
+  setTimeout(function(){ selectTopic(id); }, 300);
+}
+
+function renameTopicFromHistory(id, currentTitle) {
+  var v = prompt('Rename session:', currentTitle);
+  if (!v || !v.trim()) return;
+  safeFetch(API+'/topics/'+id, {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({title:v.trim()})}).then(function(){
+    var t = topics.find(function(x){ return x.id===id; });
+    if (t) { t.title = v.trim(); renderHistoryModal(); renderTopics(); updateLandingRecent(); }
+    if (activeId === id) document.getElementById('topbar-title').textContent = v.trim();
+  }).catch(function(){});
+}
+
+async function deleteTopicFromHistory(id) {
+  if (!confirm('Delete this session? All messages and flashcards will be removed.')) return;
+  try { await safeFetch(API+'/topics/'+id, {method:'DELETE'}); } catch(e){}
+  topics = topics.filter(function(t){ return t.id !== id; });
+  if (activeId === id) {
+    activeId = null; activeTopic = null; messages = []; flashcards = []; concepts = [];
+    document.getElementById('view-chat').style.display = 'none';
+    document.getElementById('view-landing').style.display = 'flex';
+    document.getElementById('tab-row').style.display = 'none';
+    document.getElementById('topbar-title').textContent = 'SmartMedicine';
+    document.getElementById('spec-badge').textContent = '';
+    document.getElementById('bottom-nav').style.display = 'none';
+  }
+  renderHistoryModal();
+  renderTopics();
+  updateStats();
+  updateLandingRecent();
 }
 
 /* ══ BOOT ════════════════════════════════════════════════════════════ */
