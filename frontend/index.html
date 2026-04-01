@@ -2136,7 +2136,7 @@ async function sendMessage() {
     }
     const reader=res.body.getReader();const dec=new TextDecoder();let buf='';
     while(true){
-      const{done,value}=await reader.read();if(done)break;
+      const{done,value}=await reader.read();if(done){if(value)buf+=dec.decode(value,{stream:false});break;}
       buf+=dec.decode(value,{stream:true});
       const lines=buf.split('\n');buf=lines.pop()||'';
       for(const line of lines){
@@ -2156,6 +2156,29 @@ async function sendMessage() {
             var finalMsg = messages[messages.length-1];
             if(finalMsg && finalMsg.role==='assistant' && finalMsg.content){
               extractAndSavePearls(finalMsg.content, activeId, activeTopic ? activeTopic.specialty : 'General');
+            }
+          }
+        }catch{}
+      }
+    }
+    // Process any remaining buffer after stream ends
+    if(buf.trim()){
+      const lines=buf.split('\n');
+      for(const line of lines){
+        if(!line.startsWith('data: '))continue;
+        try{
+          const d=JSON.parse(line.slice(6));
+          if(d.type==='done'){
+            try{
+              flashcards=await safeFetch(`${API}/flashcards/topic/${activeId}`);
+              renderFlashcards();
+              updateTabLabels();
+              await loadTopics();
+              if(flashcards.length>0) showToast('🃏 '+flashcards.length+' flashcards saved','teal');
+            }catch(e){}
+            var finalMsg=messages[messages.length-1];
+            if(finalMsg&&finalMsg.role==='assistant'&&finalMsg.content){
+              extractAndSavePearls(finalMsg.content,activeId,activeTopic?activeTopic.specialty:'General');
             }
           }
         }catch{}
