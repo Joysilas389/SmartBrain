@@ -318,5 +318,5 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3001; // deploy: 202604011339
 app.listen(PORT, () => console.log(`🧠 SmartMedicine running on port ${PORT}`));
