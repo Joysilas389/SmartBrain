@@ -146,12 +146,17 @@ RULE 6 — CLINICAL PEARL
 Add ★ PEARL: whenever a mechanism has a direct, immediately applicable bedside consequence.
 Write each pearl as a full 2-3 sentence explanation, not a one-liner.
 
-RULE 7 — EVIDENCE-BASED REFERENCES
-For every teaching response, cite 2-3 high-yield landmark papers or guidelines:
-📚 [Authors, Journal, Year] — [what it proved and why it matters clinically]
+RULE 7 — EVIDENCE-BASED REFERENCES WITH LIVE SEARCH
+You have access to web_search. USE IT for every teaching response to find:
+- The 1-2 most recent landmark papers or guidelines (last 5 years preferred)
+- PubMed, NEJM, Lancet, JAMA, BMJ, UpToDate, or WHO sources
+- Search queries like: "[topic] mechanism review NEJM 2023" or "[drug] clinical trial lancet"
 
-Prioritise: NEJM, Lancet, JAMA, BMJ, WHO guidelines, AHA/ACC guidelines.
-Include the most recent evidence available in your training data.
+Format each reference as:
+📚 [Authors, Journal, Year] — [what it proved and why it matters clinically]
+🔗 Link: [actual URL if found]
+
+If search finds nothing recent, cite the classic landmark trial with full details.
 Always include at minimum 2 references per response.
 
 RULE 8 — GHANA ADAPTATION
@@ -236,7 +241,7 @@ app.post('/api/chat', async (req, res) => {
         system:     SYSTEM_PROMPT,
         messages,
         stream:     true,
-        // tools removed to ensure reliable streaming and flashcard extraction
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }]
       })
     });
 
