@@ -3065,8 +3065,13 @@ async function runSimTurn(prompt, isFirst) {
     var reader = res.body.getReader(), dec = new TextDecoder(), buf = '', full = '';
     while (true) { var rv = await reader.read(); if(rv.done)break; buf+=dec.decode(rv.value,{stream:true}); var lines=buf.split('\n');buf=lines.pop()||''; for(var i=0;i<lines.length;i++){if(!lines[i].startsWith('data: '))continue;try{var d=JSON.parse(lines[i].slice(6));if(d.type==='delta')full+=d.text;}catch(e){}} }
     if (loadDiv.parentNode) loadDiv.remove();
-    simAddMsg('patient', full.trim());
-    simMessages.push({ role:'assistant', content:full });
+    var trimmed = full.trim();
+    if (trimmed) {
+      simAddMsg('patient', trimmed);
+      simMessages.push({ role:'assistant', content:trimmed });
+    } else {
+      simAddMsg('system', 'No response received. Please try again.');
+    }
     simCase = { messages:simMessages, specialty:(document.getElementById('sim-specialty')||{}).value||'General' };
   } catch(e) { if(loadDiv.parentNode)loadDiv.remove(); simAddMsg('system','Error: '+e.message); }
 }

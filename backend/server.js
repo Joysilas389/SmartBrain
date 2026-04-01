@@ -215,6 +215,7 @@ app.post('/api/chat', async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
   res.write(`data: ${JSON.stringify({ type: 'meta', msg_id: assistantMsgId })}\n\n`);
 
   try {
@@ -232,7 +233,7 @@ app.post('/api/chat', async (req, res) => {
         model:      'claude-sonnet-4-20250514',
         max_tokens: 16000,
         system:     SYSTEM_PROMPT,
-        messages,
+        messages:   messages.filter(m => m.content && m.content.toString().trim().length > 0),
         stream:     true,
         // web_search removed — causes two-round streaming, breaks flashcard extraction
       })
