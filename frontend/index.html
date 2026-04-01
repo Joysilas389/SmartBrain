@@ -2147,6 +2147,8 @@ async function sendMessage() {
           if(d.type==='error'){showToast('⚠ AI error: '+d.error,'danger');}
           if(d.type==='done'){
             try{
+              // Small delay to ensure backend has written flashcards to DB
+              await new Promise(r => setTimeout(r, 800));
               flashcards=await safeFetch(`${API}/flashcards/topic/${activeId}`);
               renderFlashcards();
               updateTabLabels();
