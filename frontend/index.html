@@ -2239,7 +2239,7 @@ function updateLastBubble(){
 
 function parseAI(c){
   if(!c)return'<div class="typing-dots"><span></span><span></span><span></span></div>';
-  const s=c.replace(/---FLASHCARDS---[\s\S]*?---END-FLASHCARDS---/g,'').replace(/\nFRONT:[^]*$/,'').trim();
+  const s=c.replace(/---FLASHCARDS---[\s\S]*?---END-FLASHCARDS---/g,'').trim();
   const parts=[];const re=/```(mermaid|ecg)([\s\S]*?)```/g;let last=0,m;
   while((m=re.exec(s))!==null){
     if(m.index>last)parts.push({t:'md',c:s.slice(last,m.index)});
