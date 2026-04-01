@@ -1078,10 +1078,22 @@ body.light-mode #spec-select option { background:#fff!important; color:#0f2040!i
           <div class="text-center"><div class="stat-num" id="ln-fc">0</div><div class="stat-lbl">Flashcards</div></div>
           <div class="text-center"><div class="stat-num">35</div><div class="stat-lbl">Subjects</div></div>
         </div>
-        <div id="land-recent" style="display:none;margin-bottom:1.5rem">
-          <div style="font-size:.7rem;color:var(--sm-text3);letter-spacing:.14em;text-transform:uppercase;margin-bottom:.75rem">Continue Learning</div>
-          <div id="land-recent-list" style="display:flex;flex-direction:column;gap:6px;max-width:480px;margin:0 auto;text-align:left"></div>
-          <div style="height:1px;background:var(--sm-border);margin:1.25rem auto;max-width:480px"></div>
+        <div id="land-recent" style="display:none;margin-bottom:1.5rem;width:100%;max-width:560px">
+          <!-- Session search -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
+            <div style="flex:1;display:flex;align-items:center;gap:6px;background:rgba(20,184,166,0.04);border:1px solid var(--sm-border);border-radius:10px;padding:6px 12px">
+              <i class="bi bi-search" style="color:var(--sm-text3);font-size:.8rem"></i>
+              <input type="text" id="history-search" placeholder="Search sessions…"
+                style="background:transparent;border:none;outline:none;color:var(--sm-text1);font-size:.82rem;width:100%;font-family:var(--sm-sans)"
+                oninput="filterHistory(this.value)"/>
+            </div>
+            <select id="history-filter" onchange="filterHistory(document.getElementById('history-search').value)"
+              style="background:var(--sm-panel);border:1px solid var(--sm-border);border-radius:10px;color:var(--sm-text2);font-size:.75rem;padding:6px 10px;font-family:var(--sm-sans);cursor:pointer">
+              <option value="">All specialties</option>
+            </select>
+          </div>
+          <div id="land-recent-list" style="display:flex;flex-direction:column;gap:6px;text-align:left;max-height:320px;overflow-y:auto;padding-right:4px"></div>
+          <div style="height:1px;background:var(--sm-border);margin:1.25rem auto"></div>
         </div>
         <button class="btn-cta mb-5" onclick="newSession()">
           <i class="bi bi-plus-lg me-2"></i>New Learning Session
@@ -1730,6 +1742,17 @@ function init() {
   mobSidebar  = new bootstrap.Offcanvas(document.getElementById('mob-sidebar'));
   toastInst   = new bootstrap.Toast(document.getElementById('app-toast'), {delay:2800});
 
+  // Show cached stats immediately so counters never show 0 on load
+  try {
+    var cachedStats = JSON.parse(localStorage.getItem('sm_stats_cache') || 'null');
+    if (cachedStats) {
+      document.getElementById('ln-topics').textContent = cachedStats.topics || 0;
+      document.getElementById('ln-fc').textContent = cachedStats.fc || 0;
+      document.getElementById('stat-topics').textContent = (cachedStats.topics || 0) + ' topics';
+      document.getElementById('stat-fc').textContent = (cachedStats.fc || 0) + ' flashcards';
+    }
+  } catch(e) {}
+
   document.addEventListener('mousedown', e => { if (!e.target.closest('#hl-menu')) closeHlMenu(); });
   setupHighlight();
   loadTopics();
@@ -1859,48 +1882,104 @@ function toggleDesktopSb() {
 
 /* ══ TOPICS ════════════════════════════════════════════════════════ */
 async function loadTopics() {
+  // Show cached data instantly before backend responds
   try {
-    topics = await safeFetch(`${API}/topics`);
-    renderTopics(); updateStats(); updateLandingRecent();
-  } catch(e) {
-    console.warn('loadTopics:', e.message);
-    showToast('⚠ Backend: ' + e.message + ' — check Render is running', 'danger');
+    var cached = JSON.parse(localStorage.getItem('sm_topics_cache') || 'null');
+    if (cached && cached.length > 0 && topics.length === 0) {
+      topics = cached;
+      updateStats();
+      updateLandingRecent();
+    }
+  } catch(e) {}
+
+  // Fetch from backend with retry on failure (handles Render cold start)
+  var attempts = 0;
+  var maxAttempts = 3;
+  while (attempts < maxAttempts) {
+    try {
+      var fresh = await safeFetch(`${API}/topics`);
+      topics = fresh;
+      try { localStorage.setItem('sm_topics_cache', JSON.stringify(topics)); } catch(e) {}
+      renderTopics(); updateStats(); updateLandingRecent();
+      return;
+    } catch(e) {
+      attempts++;
+      if (attempts < maxAttempts) {
+        await new Promise(function(r){ setTimeout(r, 2000 * attempts); });
+      } else {
+        console.warn('loadTopics failed after retries:', e.message);
+        if (topics.length === 0) showToast('⚠ Could not reach backend — retrying…', 'amber');
+        renderTopics();
+      }
+    }
   }
 }
 
 function updateLandingRecent() {
-  const recent = document.getElementById('land-recent');
-  const list   = document.getElementById('land-recent-list');
+  var recent = document.getElementById('land-recent');
+  var list   = document.getElementById('land-recent-list');
   if (!recent || !list) return;
   if (topics.length === 0) { recent.style.display = 'none'; return; }
   recent.style.display = 'block';
-  list.innerHTML = '';
-  // Show up to 4 most recent topics
-  topics.slice(0, 4).forEach(t => {
-    const sc  = 'sp-' + t.specialty.replace(/ /g,'_');
-    const btn = document.createElement('button');
-    btn.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid var(--sm-border);border-radius:12px;padding:10px 14px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-family:var(--sm-sans)';
-    btn.innerHTML = `
-      <div style="flex:1;min-width:0">
-        <div style="font-size:.85rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.title)}</div>
-        <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
-          <span class="badge rounded-pill ${sc}" style="font-size:.56rem">${t.specialty}</span>
-          ${t.message_count>0?`<span style="font-size:.65rem;color:var(--sm-text3)"><i class="bi bi-chat-text"></i> ${t.message_count} messages</span>`:''}
-          ${t.flashcard_count>0?`<span style="font-size:.65rem;color:var(--sm-amber)"><i class="bi bi-collection"></i> ${t.flashcard_count} cards</span>`:''}
-        </div>
-      </div>
-      <i class="bi bi-arrow-right-circle" style="color:var(--sm-teal);font-size:1.1rem;flex-shrink:0"></i>`;
-    btn.onmouseover = () => { btn.style.background='rgba(20,184,166,0.07)'; btn.style.borderColor='rgba(20,184,166,0.3)'; };
-    btn.onmouseout  = () => { btn.style.background='rgba(255,255,255,0.03)'; btn.style.borderColor='var(--sm-border)'; };
-    btn.onclick = () => selectTopic(t.id);
-    list.appendChild(btn);
-  });
-  if (topics.length > 4) {
-    const more = document.createElement('div');
-    more.style.cssText = 'text-align:center;font-size:.72rem;color:var(--sm-text3);padding-top:4px';
-    more.textContent = `+ ${topics.length - 4} more topics in sidebar`;
-    list.appendChild(more);
+
+  // Populate specialty filter
+  var filterEl = document.getElementById('history-filter');
+  if (filterEl) {
+    var specs = [''];
+    topics.forEach(function(t){ if(t.specialty && specs.indexOf(t.specialty)===-1) specs.push(t.specialty); });
+    var currentVal = filterEl.value;
+    filterEl.innerHTML = '<option value="">All specialties</option>';
+    specs.slice(1).sort().forEach(function(s){
+      var o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      if (s === currentVal) o.selected = true;
+      filterEl.appendChild(o);
+    });
   }
+
+  renderHistoryList(topics);
+}
+
+function filterHistory(query) {
+  var spec = (document.getElementById('history-filter') || {}).value || '';
+  var q = (query || '').toLowerCase();
+  var filtered = topics.filter(function(t) {
+    var matchSpec = !spec || t.specialty === spec;
+    var matchQ = !q || t.title.toLowerCase().indexOf(q) > -1 || t.specialty.toLowerCase().indexOf(q) > -1;
+    return matchSpec && matchQ;
+  });
+  renderHistoryList(filtered);
+}
+
+function renderHistoryList(list) {
+  var el = document.getElementById('land-recent-list');
+  if (!el) return;
+  el.innerHTML = '';
+  if (list.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:1rem;font-size:.8rem;color:var(--sm-text3)">No sessions found</div>';
+    return;
+  }
+  list.forEach(function(t) {
+    var sc = 'sp-' + t.specialty.replace(/ /g,'_');
+    var date = t.updated_at ? new Date(t.updated_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
+    var btn = document.createElement('button');
+    btn.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid var(--sm-border);border-radius:12px;padding:10px 14px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-family:var(--sm-sans)';
+    btn.innerHTML =
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:.85rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(t.title) + '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">' +
+          '<span class="badge rounded-pill ' + sc + '" style="font-size:.56rem">' + t.specialty + '</span>' +
+          (t.message_count > 0 ? '<span style="font-size:.65rem;color:var(--sm-text3)"><i class="bi bi-chat-text"></i> ' + t.message_count + '</span>' : '') +
+          (t.flashcard_count > 0 ? '<span style="font-size:.65rem;color:var(--sm-amber)"><i class="bi bi-collection"></i> ' + t.flashcard_count + ' cards</span>' : '') +
+          (date ? '<span style="font-size:.62rem;color:var(--sm-text3);margin-left:auto">' + date + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<i class="bi bi-arrow-right-circle" style="color:var(--sm-teal);font-size:1.1rem;flex-shrink:0"></i>';
+    btn.onmouseover = function(){ btn.style.background='rgba(20,184,166,0.07)'; btn.style.borderColor='rgba(20,184,166,0.3)'; };
+    btn.onmouseout  = function(){ btn.style.background='rgba(255,255,255,0.03)'; btn.style.borderColor='var(--sm-border)'; };
+    btn.onclick = function(){ selectTopic(t.id); };
+    el.appendChild(btn);
+  });
 }
 
 function renderTopics() {
@@ -1938,10 +2017,21 @@ function renderTopics() {
 }
 
 function updateStats() {
-  const totalFc = topics.reduce((a,t)=>a+(t.flashcard_count||0),0);
-  document.getElementById('stat-topics').textContent = topics.length+' topics';
-  document.getElementById('stat-fc').textContent = totalFc+' flashcards';
-  document.getElementById('ln-topics').textContent = topics.length;
+  var totalFc = topics.reduce(function(a,t){ return a+(t.flashcard_count||0); }, 0);
+  var tCount = topics.length;
+  // If topics array is empty but we have cached counts, use cached
+  if (tCount === 0) {
+    try {
+      var saved = JSON.parse(localStorage.getItem('sm_stats_cache') || 'null');
+      if (saved) { tCount = saved.topics || 0; totalFc = saved.fc || 0; }
+    } catch(e) {}
+  } else {
+    // Save to cache whenever we have real data
+    try { localStorage.setItem('sm_stats_cache', JSON.stringify({topics: tCount, fc: totalFc})); } catch(e) {}
+  }
+  document.getElementById('stat-topics').textContent = tCount + ' topics';
+  document.getElementById('stat-fc').textContent = totalFc + ' flashcards';
+  document.getElementById('ln-topics').textContent = tCount;
   document.getElementById('ln-fc').textContent = totalFc;
 }
 

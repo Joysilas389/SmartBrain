@@ -146,9 +146,18 @@ RULE 6 — CLINICAL PEARL
 Add ★ PEARL: whenever a mechanism has a direct, immediately applicable bedside consequence.
 Write each pearl as a full 2-3 sentence explanation, not a one-liner.
 
-RULE 7 — EVIDENCE-BASED REFERENCES
-Include 2-3 high-yield references with a full sentence on what each proved:
-📚 [Trial name, year] — [full sentence on what it showed and why it changed practice]
+RULE 7 — EVIDENCE-BASED REFERENCES WITH LIVE SEARCH
+You have access to web_search. USE IT for every teaching response to find:
+- The 1-2 most recent landmark papers or guidelines (last 5 years preferred)
+- PubMed, NEJM, Lancet, JAMA, BMJ, UpToDate, or WHO sources
+- Search queries like: "[topic] mechanism review NEJM 2023" or "[drug] clinical trial lancet"
+
+Format each reference as:
+📚 [Authors, Journal, Year] — [what it proved and why it matters clinically]
+🔗 Link: [actual URL if found]
+
+If search finds nothing recent, cite the classic landmark trial with full details.
+Always include at minimum 2 references per response.
 
 RULE 8 — GHANA ADAPTATION
 🇬🇭 IN GHANA: At least 3-4 sentences on: what can you diagnose with history and exam alone? What is the most informative low-cost test? How does delayed presentation change the pathophysiology and clinical picture? What resources are realistically available?
@@ -216,62 +225,118 @@ app.post('/api/chat', async (req, res) => {
   res.write(`data: ${JSON.stringify({ type: 'meta', msg_id: assistantMsgId })}\n\n`);
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type':    'application/json',
-        'x-api-key':       process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
+    // Stream handler that supports web_search tool use.
+    // Anthropic may do multiple rounds: text -> tool_use -> tool_result -> text
+    // We keep the conversation going until stop_reason === 'end_turn'.
+    let fullText = '';
+    let currentMessages = [...messages];
+    let continueLoop = true;
+
+    while (continueLoop) {
+      const apiBody = {
         model:      'claude-sonnet-4-20250514',
         max_tokens: 16000,
         system:     SYSTEM_PROMPT,
-        messages,
+        messages:   currentMessages,
         stream:     true,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }]
-      })
-    });
+      };
 
-    if (!response.ok) {
-      const err = await response.text();
-      res.write(`data: ${JSON.stringify({ type: 'error', error: err })}\n\n`);
-      res.end();
-      return;
-    }
+      const roundRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type':      'application/json',
+          'x-api-key':         process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify(apiBody)
+      });
 
-    const reader  = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer    = '';
-    let fullText  = '';
+      if (!roundRes.ok) {
+        const err = await roundRes.text();
+        res.write(`data: ${JSON.stringify({ type: 'error', error: err })}\n\n`);
+        res.end();
+        return;
+      }
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+      const reader  = roundRes.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer    = '';
+      let stopReason = 'end_turn';
+      let roundText  = '';
+      let toolUseBlocks = [];
+      let currentToolBlock = null;
+      let currentToolInput = '';
 
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (!data || data === '[DONE]') continue;
-        try {
-          const parsed = JSON.parse(data);
-          // Capture text from any content block (including after tool use)
-          if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
-            const chunk = parsed.delta.text;
-            fullText += chunk;
-            res.write(`data: ${JSON.stringify({ type: 'delta', text: chunk })}\n\n`);
-          }
-          // Also capture text content blocks that arrive as full blocks
-          if (parsed.type === 'content_block_start' && parsed.content_block?.type === 'text') {
-            // text will arrive as deltas, nothing to do here
-          }
-        } catch {}
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6).trim();
+          if (!data || data === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(data);
+
+            // Capture text deltas — stream to client
+            if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
+              const chunk = parsed.delta.text;
+              roundText += chunk;
+              fullText  += chunk;
+              res.write(`data: ${JSON.stringify({ type: 'delta', text: chunk })}\n\n`);
+            }
+
+            // Track tool use blocks
+            if (parsed.type === 'content_block_start' && parsed.content_block?.type === 'tool_use') {
+              currentToolBlock = { id: parsed.content_block.id, name: parsed.content_block.name };
+              currentToolInput = '';
+            }
+            if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'input_json_delta') {
+              currentToolInput += parsed.delta.partial_json;
+            }
+            if (parsed.type === 'content_block_stop' && currentToolBlock) {
+              try { currentToolBlock.input = JSON.parse(currentToolInput); } catch(e) { currentToolBlock.input = {}; }
+              toolUseBlocks.push(currentToolBlock);
+              currentToolBlock = null; currentToolInput = '';
+            }
+
+            // Capture stop reason
+            if (parsed.type === 'message_delta' && parsed.delta?.stop_reason) {
+              stopReason = parsed.delta.stop_reason;
+            }
+          } catch {}
+        }
+      }
+
+      // If stop_reason is tool_use, add assistant message + tool results and loop
+      if (stopReason === 'tool_use' && toolUseBlocks.length > 0) {
+        // Build assistant message with all content blocks
+        const assistantContent = [];
+        if (roundText) assistantContent.push({ type: 'text', text: roundText });
+        toolUseBlocks.forEach(tb => {
+          assistantContent.push({ type: 'tool_use', id: tb.id, name: tb.name, input: tb.input || {} });
+        });
+        currentMessages.push({ role: 'assistant', content: assistantContent });
+
+        // Add tool results (web_search handles results server-side, we pass empty result)
+        const toolResults = toolUseBlocks.map(tb => ({
+          type: 'tool_result',
+          tool_use_id: tb.id,
+          content: 'Search completed.'
+        }));
+        currentMessages.push({ role: 'user', content: toolResults });
+        // continue loop to get final text response
+      } else {
+        // end_turn — we are done
+        continueLoop = false;
       }
     }
 
+    console.log('Stream ended. fullText length: ' + fullText.length + ' topic_id: ' + topic_id);
     // Save completed response
     if (assistantMsgId && fullText) {
       msgOps.updateContent(assistantMsgId, fullText);
